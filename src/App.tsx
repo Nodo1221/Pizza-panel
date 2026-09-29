@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
 import Pie from './Pie'
 import { PRESETS, compute, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
@@ -26,6 +26,18 @@ const init: S = {
   ovenC: 275, surface: 'tray', bakeStr: evening(),
 }
 
+const KEY = 'pizza-calc:v1'
+
+function load(): S {
+  try {
+    const raw = localStorage.getItem(KEY)
+    if (raw) return { ...init, ...JSON.parse(raw), bakeStr: init.bakeStr }
+  } catch {
+    // storage blocked or the saved data is corrupt: start from the defaults
+  }
+  return init
+}
+
 function Seg<T extends string>({ value, options, onPick }: { value: T; options: [T, string][]; onPick: (v: T) => void }) {
   return (
     <div className="seg">
@@ -42,6 +54,13 @@ const F = ({ label, children }: { label: string; children: ReactNode }) => (
 
 export default function App() {
   const [s, setS] = useState<S>(init)
+  useEffect(() => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ ...s, bakeStr: undefined }))
+    } catch {
+      // storage blocked: settings just won't persist
+    }
+  }, [s])
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
   const tune = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v, preset: 'Custom' }))
   const bakeAt = new Date(s.bakeStr).getTime() || Date.now()
@@ -149,6 +168,7 @@ export default function App() {
           <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
           <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
         </div>
+        <button type="button" className="link" onClick={() => setS(init)}>Reset to defaults</button>
       </aside>
 
       <main className="main">

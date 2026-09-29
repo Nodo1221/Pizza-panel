@@ -152,3 +152,5 @@ input, select {
   .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .main > .blk:first-child { grid-column: 1 / -1; }
 }
+
+.side > .link { display: block; margin-top: 28px; font-size: 13px; }
