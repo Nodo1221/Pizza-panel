@@ -132,7 +132,8 @@ input, select {
 .pie { flex: 0 0 180px; width: 180px; margin: 0 auto; }
 .pie .crust { fill: none; stroke: var(--crust); stroke-width: 10; }
 .pie .spot { fill: var(--char); }
-.pie path { stroke: var(--bench); stroke-width: 2; }
+.pie path { stroke-width: 0.6; }
+.pie .cut { stroke: var(--bench); stroke-width: 2.5; }
 .sw {
   display: inline-block;
   width: 10px;

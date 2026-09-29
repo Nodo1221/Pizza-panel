@@ -7,6 +7,7 @@ const SPOTS = [[15, 2], [62, 1.5], [118, 2.2], [170, 1.6], [228, 2], [281, 1.7],
   y: 100 + 91 * Math.sin((deg * Math.PI) / 180),
   r,
 }))
+const CUTS = Array.from({ length: 8 }, (_, i) => ((i + 0.5) * Math.PI) / 4)
 const pt = (t: number) => `${(100 + R * Math.cos(t)).toFixed(2)} ${(100 + R * Math.sin(t)).toFixed(2)}`
 
 export default function Pie({ slices }: { slices: Slice[] }) {
@@ -21,12 +22,13 @@ export default function Pie({ slices }: { slices: Slice[] }) {
         const d = `M100 100 L${pt(from)} A${R} ${R} 0 ${span > Math.PI ? 1 : 0} 1 ${pt(from + span)} Z`
         from += span
         return (
-          <path key={x.key} d={d} style={{ fill: `var(--p-${x.key})` }}>
+          <path key={x.key} d={d} style={{ fill: `var(--p-${x.key})`, stroke: `var(--p-${x.key})` }}>
             <title>{`${x.name}: ${((x.g / total) * 100).toFixed(1)}% of the dough by weight`}</title>
           </path>
         )
       })}
       {SPOTS.map((p, i) => <circle key={i} className="spot" cx={p.x} cy={p.y} r={p.r} />)}
+      {CUTS.map(t => <line key={t} className="cut" x1="100" y1="100" x2={100 + 97 * Math.cos(t)} y2={100 + 97 * Math.sin(t)} />)}
     </svg>
   )
 }
