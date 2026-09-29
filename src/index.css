@@ -41,7 +41,7 @@ h2 { margin: 0; }
 
 .app { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; min-height: 100vh; }
 .side { background: var(--bench); padding: 28px 24px 40px; }
-.main { padding: 32px clamp(20px, 4vw, 56px) 56px; max-width: 880px; }
+.main { min-width: 0; padding: 32px clamp(20px, 4vw, 56px) 56px; }
 
 .g { margin-top: 28px; }
 .g > h2 { font-size: 15px; font-weight: 650; margin-bottom: 10px; }
@@ -127,8 +127,9 @@ input, select {
 .hd span { color: var(--mute); }
 .blk .warn { background: var(--sheet); }
 
-.recipe { display: grid; grid-template-columns: 1fr 190px; gap: 28px; align-items: center; }
-.pie { width: 100%; }
+.recipe { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+.recipe .tbl { flex: 1 1 320px; min-width: 0; }
+.pie { flex: 0 0 180px; width: 180px; margin: 0 auto; }
 .pie .crust { fill: none; stroke: var(--crust); stroke-width: 10; }
 .pie .spot { fill: var(--char); }
 .pie path { stroke: var(--bench); stroke-width: 2; }
@@ -141,11 +142,12 @@ input, select {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
-@media (max-width: 640px) {
-  .recipe { grid-template-columns: 1fr; }
-  .pie { max-width: 200px; justify-self: center; }
-}
 
 .recipe .tbl { table-layout: fixed; }
 .recipe .tbl th:nth-child(2) { width: 92px; }
 .recipe .tbl th:nth-child(3) { width: 100px; }
+
+@media (min-width: 1400px) {
+  .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .main > .blk:first-child { grid-column: 1 / -1; }
+}
