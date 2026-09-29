@@ -67,8 +67,7 @@ export default function App() {
   return (
     <div className="app">
       <aside className="side">
-        <h1>Pizza dough</h1>
-        <p className="hint">Ingredients and timing for Neapolitan-style pizza in a home oven.</p>
+        <h1>Pizza calc</h1>
 
         <div className="g">
           <h2>Batch</h2>
