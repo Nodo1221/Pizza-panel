@@ -53,7 +53,7 @@ const F = ({ label, children }: { label: string; children: ReactNode }) => (
 )
 
 export default function App() {
-  const [s, setS] = useState<S>(init)
+  const [s, setS] = useState<S>(load)
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify({ ...s, bakeStr: undefined }))
