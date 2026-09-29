@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
 import Pie from './Pie'
-import { PRESETS, compute, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
+import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
 
 type S = Omit<Inputs, 'bakeAt'> & { flourId: string; bakeStr: string; preset: string }
 type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
@@ -20,13 +20,13 @@ function evening() {
 
 const init: S = {
   pizzas: 4, ballG: 250, hydration: 60, saltPct: 2.8, oilPct: 0, sugarPct: 0,
-  protein: 12.5, flourId: 'caputo-pizzeria', yeast: 'fresh',
+  protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   ...PRESETS.Overnight, preset: 'Overnight',
   ovenC: 275, surface: 'tray', bakeStr: evening(),
 }
 
-const KEY = 'pizza-calc:v1'
+const KEY = 'pizza-calc:v2'
 
 function load(): S {
   try {
@@ -66,7 +66,8 @@ export default function App() {
   const bakeAt = new Date(s.bakeStr).getTime() || Date.now()
   const r = useMemo(() => compute({ ...s, bakeAt }), [s, bakeAt])
   const flour = FLOURS.find(f => f.id === s.flourId)
-  const sug = suggestHydration(s.protein, s.surface, s.ovenC)
+  const effW = s.w > 0 ? s.w : estimateW(s.protein)
+  const sug = suggestHydration(effW, s.surface, s.ovenC)
   const first = r.stages[0]
 
   const num = (k: NumKey, put: typeof set = set, step = 1) => (
@@ -106,17 +107,22 @@ export default function App() {
               value={s.flourId}
               onChange={e => {
                 const f = FLOURS.find(x => x.id === e.target.value)
-                setS(p => ({ ...p, flourId: e.target.value, protein: f ? f.protein : p.protein }))
+                setS(p => ({ ...p, flourId: e.target.value, protein: f ? f.protein : p.protein, w: f ? f.w ?? 0 : p.w }))
               }}
             >
               {FLOURS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               <option value="custom">Other flour</option>
             </select>
           </F>
-          <F label="Protein (g per 100 g)">
-            <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
-          </F>
-          {flour && <p className="hint">{flour.where}. {flour.w ? `W is about ${flour.w}.` : 'W is not printed on the pack.'}</p>}
+          <div className="row">
+            <F label="W (if printed)">
+              <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
+            </F>
+            <F label="Protein (%)">
+              <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
+            </F>
+          </div>
+          <p className="hint">{flour ? `${flour.where}. ` : ''}{s.w > 0 ? `Using W ${s.w}.` : `No W entered, so W is estimated as ${Math.round(effW)} from protein.`}</p>
         </div>
 
         <div className="g">
@@ -150,6 +156,7 @@ export default function App() {
             <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
             <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
           </div>
+          <p className="hint">Comfortable for this flour: {r.range.min} to {Math.round(r.range.max)} h in total, currently {s.bulkH + s.coldH + s.proofH} h.</p>
         </div>
 
         <div className="g">
