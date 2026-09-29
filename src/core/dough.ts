@@ -79,7 +79,6 @@ export function compute(i: Inputs) {
 
   const waterTemp = 3 * i.ddtC - i.flourC - i.roomC - FRICTION[i.mixing]
   const bakeMin = (4 + (300 - i.ovenC) * 0.06) * SURFACE_BAKE[i.surface]
-  const preheat = i.surface === 'tray' ? 30 : 60
 
   const M = 60000
   const stages: Stage[] = [
@@ -105,14 +104,15 @@ export function compute(i: Inputs) {
   before('Bulk rise', 'room', i.bulkH * 60, `${i.roomC} °C, covered`)
   before('Mix and knead', 'prep', 12, `Add salt and yeast. Aim for a ${i.ddtC} °C dough`)
   before('Autolysis', 'room', i.autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
-  stages.push({
-    label: 'Oven preheat',
-    kind: 'oven',
-    start: i.bakeAt - preheat * M,
-    min: preheat,
-    note: i.surface === 'tray' ? 'Highest setting, rack in the top third' : 'Highest setting with the stone or steel inside',
-    overlap: true,
-  })
+  if (i.surface !== 'tray')
+    stages.push({
+      label: 'Oven preheat',
+      kind: 'oven',
+      start: i.bakeAt - 60 * M,
+      min: 60,
+      note: 'Highest setting with the stone or steel inside',
+      overlap: true,
+    })
   stages.sort((a, b) => a.start - b.start)
 
   const warnings: string[] = []
