@@ -5,11 +5,11 @@
   --mute: #5f6c76;
   --line: #d3dbdb;
   --field: #d9e1e0;
-  --room: #cfc3ad;
+  --room: #8a9aa3;
   --warn: #d69a2d;
-  --cold: #7fa8bd;
+  --cold: #2f6f8f;
   --oven: #b8402c;
-  --prep: #24313b;
+  --prep: #d69a2d;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -20,11 +20,11 @@
     --mute: #93a1ab;
     --line: #2b363d;
     --field: #26313a;
-    --room: #6f6759;
+    --room: #66767f;
     --warn: #e6b04a;
-    --cold: #4f7d94;
+    --cold: #5fa3c4;
     --oven: #e2705a;
-    --prep: #e4ebee;
+    --prep: #e6b04a;
   }
 }
 
