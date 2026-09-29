@@ -145,3 +145,7 @@ input, select {
   .recipe { grid-template-columns: 1fr; }
   .pie { max-width: 200px; justify-self: center; }
 }
+
+.recipe .tbl { table-layout: fixed; }
+.recipe .tbl th:nth-child(2) { width: 92px; }
+.recipe .tbl th:nth-child(3) { width: 100px; }
