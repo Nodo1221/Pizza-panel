@@ -5,10 +5,11 @@
   --mute: #5f6c76;
   --line: #d3dbdb;
   --field: #d9e1e0;
-  --room: #d69a2d;
-  --cold: #2f6f8f;
+  --room: #cfc3ad;
+  --warn: #d69a2d;
+  --cold: #7fa8bd;
   --oven: #b8402c;
-  --prep: #8a9aa3;
+  --prep: #24313b;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -19,10 +20,11 @@
     --mute: #93a1ab;
     --line: #2b363d;
     --field: #26313a;
-    --room: #e6b04a;
-    --cold: #5fa3c4;
+    --room: #6f6759;
+    --warn: #e6b04a;
+    --cold: #4f7d94;
     --oven: #e2705a;
-    --prep: #66767f;
+    --prep: #e4ebee;
   }
 }
 
@@ -91,7 +93,7 @@ input, select {
 .tbl .when { width: 88px; color: var(--mute); white-space: nowrap; }
 .tbl .hint { margin: 0; }
 
-.warn { margin: 12px 0 0; padding: 8px 12px; background: var(--bench); border-left: 4px solid var(--room); font-size: 14px; }
+.warn { margin: 12px 0 0; padding: 8px 12px; background: var(--bench); border-left: 4px solid var(--warn); font-size: 14px; }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }

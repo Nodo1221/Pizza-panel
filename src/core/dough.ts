@@ -104,7 +104,7 @@ export function compute(i: Inputs) {
   before('Divide and ball', 'prep', 15, 'Tight balls, 1 cm apart in a lidded tray')
   before('Bulk rise', 'room', i.bulkH * 60, `${i.roomC} °C, covered`)
   before('Mix and knead', 'prep', 12, `Add salt and yeast. Aim for a ${i.ddtC} °C dough`)
-  before('Autolysis', 'prep', i.autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
+  before('Autolysis', 'room', i.autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
   stages.push({
     label: 'Oven preheat',
     kind: 'oven',
