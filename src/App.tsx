@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
+import Pie from './Pie'
 import { PRESETS, compute, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
 
 type S = Omit<Inputs, 'bakeAt'> & { flourId: string; bakeStr: string; preset: string }
@@ -53,13 +54,14 @@ export default function App() {
     <input type="number" inputMode="decimal" step={step} value={s[k]} onChange={e => put(k, parseFloat(e.target.value) || 0)} />
   )
   const yName = { fresh: 'fresh', instant: 'instant dry', active: 'active dry' }[s.yeast]
-  const rows: [string, number, number, number][] = [
-    ['Flour', r.flour, 100, 0],
-    ['Water', r.water, s.hydration, 0],
-    ['Salt', r.salt, s.saltPct, 1],
-    ...(s.oilPct > 0 ? [['Olive oil', r.oil, s.oilPct, 1] as [string, number, number, number]] : []),
-    ...(s.sugarPct > 0 ? [['Sugar', r.sugar, s.sugarPct, 1] as [string, number, number, number]] : []),
-    [`Yeast (${yName})`, r.yeastG, (r.yeastG / r.flour) * 100, 2],
+  type Row = { key: string; name: string; g: number; pc: number; d: number }
+  const rows: Row[] = [
+    { key: 'flour', name: 'Flour', g: r.flour, pc: 100, d: 0 },
+    { key: 'water', name: 'Water', g: r.water, pc: s.hydration, d: 0 },
+    { key: 'salt', name: 'Salt', g: r.salt, pc: s.saltPct, d: 1 },
+    ...(s.oilPct > 0 ? [{ key: 'oil', name: 'Olive oil', g: r.oil, pc: s.oilPct, d: 1 }] : []),
+    ...(s.sugarPct > 0 ? [{ key: 'sugar', name: 'Sugar', g: r.sugar, pc: s.sugarPct, d: 1 }] : []),
+    { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: (r.yeastG / r.flour) * 100, d: 2 },
   ]
 
   return (
@@ -151,49 +153,67 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <h2 className="lede">Start {when(first.start)}, first pizza in at {when(bakeAt)}</h2>
-        {first.start < Date.now() && <p className="warn">The first stage is already in the past. Move the bake time later or pick a shorter schedule.</p>}
-        <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
-          {r.stages.filter(x => !x.overlap).map(x => (
-            <span key={x.label} title={`${x.label}: ${dur(x.min)}`} style={{ flexGrow: Math.sqrt(x.min), background: `var(--${x.kind})` }} />
-          ))}
-        </div>
-        <div className="key">
-          <span><i style={{ background: 'var(--room)' }} />Room temperature</span>
-          <span><i style={{ background: 'var(--cold)' }} />Fridge</span>
-          <span><i style={{ background: 'var(--oven)' }} />Oven</span>
-          <span><i style={{ background: 'var(--prep)' }} />Hands on</span>
-        </div>
-
-        <h2 className="sec">Recipe for {s.pizzas} × {s.ballG} g</h2>
-        <table className="tbl">
-          <thead><tr><th>Ingredient</th><th>Baker's %</th><th>Grams</th></tr></thead>
-          <tbody>
-            {rows.map(([name, g, pc, d]) => (
-              <tr key={name}><td>{name}</td><td>{pc.toFixed(pc < 10 ? 2 : 1)}</td><td className="big">{g.toFixed(d)}</td></tr>
+        <section className="blk">
+          <div className="hd">
+            <h2>Timeline</h2>
+            <span>Start {when(first.start)}, first pizza in at {when(bakeAt)}</span>
+          </div>
+          {first.start < Date.now() && <p className="warn">The first stage is already in the past. Move the bake time later or pick a shorter schedule.</p>}
+          <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
+            {r.stages.filter(x => !x.overlap).map(x => (
+              <span key={x.label} title={`${x.label}: ${dur(x.min)}`} style={{ flexGrow: Math.sqrt(x.min), background: `var(--${x.kind})` }} />
             ))}
-          </tbody>
-        </table>
-        <p className="hint">
-          The same dough with other yeast: {r.yeastAll.fresh.toFixed(2)} g fresh, {r.yeastAll.instant.toFixed(2)} g instant, {r.yeastAll.active.toFixed(2)} g active dry.
-          {r.dilute && ` The yeast is under 1 g. Stir 1 g of yeast into 99 g of water and use ${r.dilute.solution.toFixed(0)} g of that mix, then take ${r.dilute.waterIn.toFixed(0)} g off the water above.`}
-          {` Use water at ${r.waterTemp.toFixed(0)} °C.`}
-        </p>
+          </div>
+          <div className="key">
+            <span><i style={{ background: 'var(--room)' }} />Room temperature</span>
+            <span><i style={{ background: 'var(--cold)' }} />Fridge</span>
+            <span><i style={{ background: 'var(--oven)' }} />Oven</span>
+            <span><i style={{ background: 'var(--prep)' }} />Hands on</span>
+          </div>
+        </section>
 
-        {r.warnings.map(w => <p className="warn" key={w}>{w}</p>)}
+        <section className="blk">
+          <div className="hd">
+            <h2>Recipe</h2>
+            <span>{s.pizzas} × {s.ballG} g</span>
+          </div>
+          <div className="recipe">
+            <table className="tbl">
+              <thead><tr><th>Ingredient</th><th>Baker's %</th><th>Grams</th></tr></thead>
+              <tbody>
+                {rows.map(x => (
+                  <tr key={x.key}>
+                    <td><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</td>
+                    <td>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}</td>
+                    <td className="big">{x.g.toFixed(x.d)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pie slices={rows} />
+          </div>
+          <p className="hint">
+            The same dough with other yeast: {r.yeastAll.fresh.toFixed(2)} g fresh, {r.yeastAll.instant.toFixed(2)} g instant, {r.yeastAll.active.toFixed(2)} g active dry.
+            {r.dilute && ` The yeast is under 1 g. Stir 1 g of yeast into 99 g of water and use ${r.dilute.solution.toFixed(0)} g of that mix, then take ${r.dilute.waterIn.toFixed(0)} g off the water above.`}
+            {` Use water at ${r.waterTemp.toFixed(0)} °C.`}
+          </p>
+          {r.warnings.map(w => <p className="warn" key={w}>{w}</p>)}
+        </section>
 
-        <h2 className="sec">Schedule</h2>
-        <table className="tbl">
-          <tbody>
-            {r.stages.map(x => (
-              <tr key={x.label}>
-                <td className="when">{when(x.start)}</td>
-                <td><span className="dot" style={{ background: `var(--${x.kind})` }} /><b>{x.label}</b><br /><span className="hint">{x.note}</span></td>
-                <td>{dur(x.min)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <section className="blk">
+          <div className="hd"><h2>Schedule</h2></div>
+          <table className="tbl">
+            <tbody>
+              {r.stages.map(x => (
+                <tr key={x.label}>
+                  <td className="when">{when(x.start)}</td>
+                  <td><span className="dot" style={{ background: `var(--${x.kind})` }} /><b>{x.label}</b><br /><span className="hint">{x.note}</span></td>
+                  <td>{dur(x.min)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       </main>
     </div>
   )
