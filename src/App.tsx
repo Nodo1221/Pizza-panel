@@ -234,8 +234,7 @@ export default function App() {
       />
 
       <main className="main">
-        <div className="panels">
-        <section className="blk">
+        <section>
           <div className="hd">
             <h2>Timeline</h2>
             <span>{dur(-first.start / 60000)} from the first step to the first pizza</span>
@@ -246,31 +245,29 @@ export default function App() {
             ))}
           </div>
           <div className="key">
-            <span><i style={{ background: 'var(--room)' }} />Room temperature</span>
-            <span><i style={{ background: 'var(--cold)' }} />Fridge</span>
-            <span><i style={{ background: 'var(--oven)' }} />Oven</span>
-            <span><i style={{ background: 'var(--prep)' }} />Hands on</span>
+            <span><i className="sw" style={{ background: 'var(--room)' }} />Room temperature</span>
+            <span><i className="sw" style={{ background: 'var(--cold)' }} />Fridge</span>
+            <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
+            <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
           </div>
         </section>
 
-        <section className="blk">
+        <section className="menu">
           <div className="hd">
             <h2>Recipe</h2>
             <span>{s.pizzas} × {s.ballG} g</span>
           </div>
-          <div className="recipe">
-            <table className="tbl">
-              <thead><tr><th>Ingredient</th><th>Baker's %</th><th>Grams</th></tr></thead>
-              <tbody>
-                {rows.map(x => (
-                  <tr key={x.key}>
-                    <td><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</td>
-                    <td>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}</td>
-                    <td className="big">{x.g.toFixed(x.d)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="cols">
+            <div>
+              {rows.map(x => (
+                <div className="line big" key={x.key}>
+                  <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
+                  <span className="dots" />
+                  <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
+                  <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
+                </div>
+              ))}
+            </div>
             <Pie slices={rows} />
           </div>
           <p className="hint">
@@ -278,23 +275,22 @@ export default function App() {
             {r.dilute && ` The yeast is under 1 g. Stir 1 g of yeast into 99 g of water and use ${r.dilute.solution.toFixed(0)} g of that mix, then take ${r.dilute.waterIn.toFixed(0)} g off the water above.`}
             {` Use water at ${r.waterTemp.toFixed(0)} °C.`}
           </p>
-          {r.warnings.map(w => <p className="warn" key={w}>{w}</p>)}
+          {r.warnings.map(w => <p className="note" key={w}>{w}</p>)}
         </section>
 
-        <section className="blk">
+        <section className="ticket">
           <div className="hd"><h2>Schedule</h2></div>
-          <table className="tbl">
-            <tbody>
-              {r.stages.map(x => (
-                <tr key={x.label}>
-                  <td><span className="dot" style={{ background: `var(--${x.kind})` }} /><b>{x.label}</b><br /><span className="hint">{x.note}</span></td>
-                  <td>{dur(x.min)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {r.stages.map(x => (
+            <div className="item" key={x.label}>
+              <div className="line">
+                <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
+                <span className="dots" />
+                <span>{dur(x.min)}</span>
+              </div>
+              <p>{x.note}</p>
+            </div>
+          ))}
         </section>
-        </div>
       </main>
     </div>
   )
