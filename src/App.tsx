@@ -3,27 +3,17 @@ import { FLOURS } from './core/flours'
 import Pie from './Pie'
 import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
 
-type S = Omit<Inputs, 'bakeAt'> & { flourId: string; bakeStr: string; preset: string }
+type S = Inputs & { flourId: string; preset: string }
 type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 
-const pad = (n: number) => String(n).padStart(2, '0')
-const local = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-const when = (ms: number) => new Date(ms).toLocaleString('pl-PL', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
-
-function evening() {
-  const d = new Date()
-  d.setHours(19, 0, 0, 0)
-  while (d.getTime() < Date.now() + 26 * 36e5) d.setDate(d.getDate() + 1)
-  return local(d)
-}
 
 const init: S = {
   pizzas: 4, ballG: 250, hydration: 60, saltPct: 2.8, oilPct: 0, sugarPct: 0,
   protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   ...PRESETS.Overnight, preset: 'Overnight',
-  ovenC: 275, surface: 'tray', bakeStr: evening(),
+  ovenC: 275, surface: 'tray',
 }
 
 const KEY = 'pizza-calc:v2'
@@ -45,7 +35,7 @@ function loadSide() {
 function load(): S {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...init, ...JSON.parse(raw), bakeStr: init.bakeStr }
+    if (raw) return { ...init, ...JSON.parse(raw) }
   } catch {
     // storage blocked or the saved data is corrupt: start from the defaults
   }
@@ -70,7 +60,7 @@ export default function App() {
   const [s, setS] = useState<S>(load)
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ ...s, bakeStr: undefined }))
+      localStorage.setItem(KEY, JSON.stringify(s))
     } catch {
       // storage blocked: settings just won't persist
     }
@@ -95,8 +85,7 @@ export default function App() {
   }
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
   const tune = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v, preset: 'Custom' }))
-  const bakeAt = new Date(s.bakeStr).getTime() || Date.now()
-  const r = useMemo(() => compute({ ...s, bakeAt }), [s, bakeAt])
+  const r = useMemo(() => compute(s), [s])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
@@ -128,9 +117,6 @@ export default function App() {
             <F label="Pizzas">{num('pizzas')}</F>
             <F label="Ball weight (g)">{num('ballG')}</F>
           </div>
-          <F label="First pizza goes in the oven at">
-            <input type="datetime-local" value={s.bakeStr} onChange={e => set('bakeStr', e.target.value)} />
-          </F>
         </div>
 
         <div className="g">
@@ -232,9 +218,8 @@ export default function App() {
         <section className="blk">
           <div className="hd">
             <h2>Timeline</h2>
-            <span>Start {when(first.start)}, first pizza in at {when(bakeAt)}</span>
+            <span>{dur(-first.start / 60000)} from the first step to the first pizza</span>
           </div>
-          {first.start < Date.now() && <p className="warn">The first stage is already in the past. Move the bake time later or pick a shorter schedule.</p>}
           <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
             {r.stages.filter(x => !x.overlap).map(x => (
               <span key={x.label} title={`${x.label}: ${dur(x.min)}`} style={{ flexGrow: Math.sqrt(x.min), background: `var(--${x.kind})` }} />
@@ -282,7 +267,6 @@ export default function App() {
             <tbody>
               {r.stages.map(x => (
                 <tr key={x.label}>
-                  <td className="when">{when(x.start)}</td>
                   <td><span className="dot" style={{ background: `var(--${x.kind})` }} /><b>{x.label}</b><br /><span className="hint">{x.note}</span></td>
                   <td>{dur(x.min)}</td>
                 </tr>

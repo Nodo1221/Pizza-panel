@@ -88,7 +88,6 @@ input, select {
 .tbl td { padding: 10px 0; border-top: 1px solid var(--line); vertical-align: top; }
 .tbl thead th:not(:first-child), .tbl thead + tbody td:not(:first-child), .tbl td:last-child { text-align: right; }
 .tbl .big { font-size: 24px; font-weight: 650; line-height: 1.1; }
-.tbl .when { width: 88px; color: var(--mute); white-space: nowrap; }
 .tbl .hint { margin: 0; }
 
 .warn { margin: 12px 0 0; padding: 8px 12px; background: var(--bench); border-left: 4px solid var(--warn); font-size: 14px; }

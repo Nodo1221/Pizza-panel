@@ -25,13 +25,12 @@ export interface Inputs {
   proofH: number
   ovenC: number
   surface: Surface
-  bakeAt: number // epoch ms, when the first pizza goes in
 }
 
 export interface Stage {
   label: string
   kind: 'prep' | 'room' | 'cold' | 'oven'
-  start: number
+  start: number // ms relative to the first pizza going in, so zero or negative
   min: number
   note: string
   overlap?: boolean
@@ -108,12 +107,12 @@ export function compute(i: Inputs) {
     {
       label: 'Bake',
       kind: 'oven',
-      start: i.bakeAt,
+      start: 0,
       min: i.pizzas * (bakeMin + 2),
       note: `${bakeMin.toFixed(1)} min per pizza at ${i.ovenC} °C, plus 2 min between pizzas`,
     },
   ]
-  let t = i.bakeAt
+  let t = 0
   const before = (label: string, kind: Stage['kind'], min: number, note: string) => {
     if (min <= 0) return
     t -= min * M
@@ -131,7 +130,7 @@ export function compute(i: Inputs) {
     stages.push({
       label: 'Oven preheat',
       kind: 'oven',
-      start: i.bakeAt - 60 * M,
+      start: -60 * M,
       min: 60,
       note: 'Highest setting with the stone or steel inside',
       overlap: true,
