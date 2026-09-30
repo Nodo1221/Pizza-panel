@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
 import Pie from './Pie'
 import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
@@ -27,6 +27,20 @@ const init: S = {
 }
 
 const KEY = 'pizza-calc:v2'
+
+const SIDE_KEY = 'pizza-calc:side'
+const SIDE_MIN = 300
+const sideMax = () => Math.max(SIDE_MIN, Math.round(window.innerWidth * 0.7))
+
+function loadSide() {
+  try {
+    const n = Number(localStorage.getItem(SIDE_KEY))
+    if (n >= SIDE_MIN) return n
+  } catch {
+    // storage blocked: use the default width
+  }
+  return 380
+}
 
 function load(): S {
   try {
@@ -61,6 +75,24 @@ export default function App() {
       // storage blocked: settings just won't persist
     }
   }, [s])
+  const [side, setSide] = useState(loadSide)
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDE_KEY, String(side))
+    } catch {
+      // storage blocked: the width just won't persist
+    }
+  }, [side])
+  const drag = (e: RPointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const move = (ev: PointerEvent) => setSide(Math.min(sideMax(), Math.max(SIDE_MIN, Math.round(ev.clientX - 4))))
+    const stop = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', stop)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', stop)
+  }
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
   const tune = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v, preset: 'Custom' }))
   const bakeAt = new Date(s.bakeStr).getTime() || Date.now()
@@ -85,9 +117,10 @@ export default function App() {
   ]
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--side': `${side}px` } as CSSProperties}>
       <aside className="side">
         <h1>Pizza calc</h1>
+        <div className="side-body">
 
         <div className="g">
           <h2>Batch</h2>
@@ -175,10 +208,27 @@ export default function App() {
           <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
           <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
         </div>
+        </div>
         <button type="button" className="link" onClick={() => setS(init)}>Reset to defaults</button>
       </aside>
+      <div
+        className="grip"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the inputs column"
+        aria-valuenow={side}
+        aria-valuemin={SIDE_MIN}
+        tabIndex={0}
+        onPointerDown={drag}
+        onDoubleClick={() => setSide(380)}
+        onKeyDown={e => {
+          if (e.key === 'ArrowLeft') setSide(w => Math.max(SIDE_MIN, w - 20))
+          if (e.key === 'ArrowRight') setSide(w => Math.min(sideMax(), w + 20))
+        }}
+      />
 
       <main className="main">
+        <div className="panels">
         <section className="blk">
           <div className="hd">
             <h2>Timeline</h2>
@@ -240,6 +290,7 @@ export default function App() {
             </tbody>
           </table>
         </section>
+        </div>
       </main>
     </div>
   )

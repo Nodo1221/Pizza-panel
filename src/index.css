@@ -39,8 +39,8 @@ body {
 h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0 0 4px; }
 h2 { margin: 0; }
 
-.app { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; min-height: 100vh; }
-.side { background: var(--bench); padding: 28px 24px 40px; }
+.app { display: grid; grid-template-columns: var(--side, 380px) 8px minmax(0, 1fr); min-height: 100vh; }
+.side { background: var(--bench); padding: 28px 24px 40px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .main { min-width: 0; padding: 32px clamp(20px, 4vw, 56px) 56px; }
 
 .g { margin-top: 28px; }
@@ -95,6 +95,8 @@ input, select {
 
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; }
+  .grip { display: none; }
 }
 
 :root {
@@ -120,7 +122,8 @@ input, select {
   }
 }
 
-.main { display: grid; gap: 20px; align-content: start; }
+.main { container-type: inline-size; }
+.panels { display: grid; gap: 20px; align-content: start; }
 .blk { background: var(--bench); border-radius: 12px; padding: 22px 24px 20px; }
 .hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 14px; }
 .hd h2 { font-size: 20px; font-weight: 650; }
@@ -148,9 +151,14 @@ input, select {
 .recipe .tbl th:nth-child(2) { width: 92px; }
 .recipe .tbl th:nth-child(3) { width: 100px; }
 
-@media (min-width: 1400px) {
-  .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .main > .blk:first-child { grid-column: 1 / -1; }
+@container (min-width: 960px) {
+  .panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .panels > .blk:first-child { grid-column: 1 / -1; }
 }
 
 .side > .link { display: block; margin-top: 28px; font-size: 13px; }
+
+.side-body { columns: 280px; column-gap: 32px; }
+.side-body > .g { break-inside: avoid; }
+.grip { cursor: col-resize; touch-action: none; background: linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat; }
+.grip:hover, .grip:focus-visible { background: linear-gradient(var(--cold), var(--cold)) center / 3px 100% no-repeat; outline: none; }
