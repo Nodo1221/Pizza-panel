@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import Pie from './Pie'
 import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
 
 type S = Inputs & { flourId: string; preset: string }
@@ -268,13 +267,17 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <Pie slices={rows} />
+            <div className="aside">
+              <div className="line"><span>Water temperature</span><span className="dots" /><b>{r.waterTemp.toFixed(0)} °C</b></div>
+              <p className="hint">The same dough with another yeast</p>
+              <div className="line"><span>Fresh</span><span className="dots" /><b>{r.yeastAll.fresh.toFixed(2)} g</b></div>
+              <div className="line"><span>Instant dry</span><span className="dots" /><b>{r.yeastAll.instant.toFixed(2)} g</b></div>
+              <div className="line"><span>Active dry</span><span className="dots" /><b>{r.yeastAll.active.toFixed(2)} g</b></div>
+            </div>
           </div>
-          <p className="hint">
-            The same dough with other yeast: {r.yeastAll.fresh.toFixed(2)} g fresh, {r.yeastAll.instant.toFixed(2)} g instant, {r.yeastAll.active.toFixed(2)} g active dry.
-            {r.dilute && ` The yeast is under 1 g. Stir 1 g of yeast into 99 g of water and use ${r.dilute.solution.toFixed(0)} g of that mix, then take ${r.dilute.waterIn.toFixed(0)} g off the water above.`}
-            {` Use water at ${r.waterTemp.toFixed(0)} °C.`}
-          </p>
+          {r.dilute && (
+            <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
+          )}
           {r.warnings.map(w => <p className="note" key={w}>{w}</p>)}
         </section>
 

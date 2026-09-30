@@ -13,7 +13,6 @@
   --prep: #d9a441;
   --cold: #5b8fb0;
   --oven: #c4452f;
-  --crust: #b9763a;
   --p-flour: #ecd9a8;
   --p-water: #a7c6d8;
   --p-salt: #dad7cf;
@@ -114,14 +113,6 @@ input, select {
 .big strong { font-size: 26px; font-weight: 600; line-height: 1; min-width: 88px; text-align: right; }
 .big em { font-size: 14px; font-style: normal; font-weight: 400; color: var(--mute); }
 
-.pie { width: 100%; height: auto; }
-.pie .crust { fill: none; stroke: var(--crust); stroke-width: 12; }
-.pie .spot { fill: #4a2a14; }
-.pie .cut { stroke: var(--sheet); stroke-width: 3; }
-.pie .lead { fill: none; stroke: var(--dot); stroke-width: 1; }
-.pie path { stroke-width: 0.6; }
-.pie text { font: 600 13px var(--serif); fill: var(--ink); }
-.pie tspan { font-weight: 400; fill: var(--mute); }
 
 .note { margin: 12px 0 0; padding-left: 12px; border-left: 3px solid var(--prep); color: var(--mute); font-size: 14px; }
 
@@ -137,3 +128,8 @@ input, select {
   .side { position: static; height: auto; border-bottom: 1px solid var(--line); }
   .grip { display: none; }
 }
+
+.aside { display: grid; gap: 10px; align-content: start; padding-top: 10px; }
+.aside .line { font-size: 16px; }
+.aside b { font-weight: 600; }
+.aside .hint { margin-top: 10px; }
