@@ -165,3 +165,12 @@ input, select {
 .pie text { font-size: 12px; fill: var(--ink); }
 .pie tspan { fill: var(--mute); }
 .pie .lead { fill: none; stroke: var(--mute); stroke-width: 1; }
+
+.stack { break-inside: avoid; margin-top: 24px; }
+.more { border-top: 1px solid var(--line); }
+.more summary { display: flex; align-items: baseline; gap: 12px; padding: 12px 0; cursor: pointer; list-style: none; font-weight: 600; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary span { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--mute); text-align: right; }
+.more summary::after { content: '+'; font-weight: 400; color: var(--mute); width: 12px; text-align: center; }
+.more[open] summary::after { content: '−'; }
+.more .body { display: grid; gap: 14px; padding: 2px 0 18px; }

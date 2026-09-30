@@ -9,7 +9,7 @@ type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
 
 const init: S = {
-  pizzas: 4, ballG: 250, hydration: 60, saltPct: 2.8, oilPct: 0, sugarPct: 0,
+  pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275), saltPct: 2.8, oilPct: 0, sugarPct: 0,
   protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   ...PRESETS.Overnight, preset: 'Overnight',
@@ -56,6 +56,15 @@ function Seg<T extends string>({ value, options, onPick }: { value: T; options: 
 
 const F = ({ label, children }: { label: string; children: ReactNode }) => (
   <label className="f"><span>{label}</span>{children}</label>
+)
+const Grp = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="f"><span>{label}</span>{children}</div>
+)
+const More = ({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) => (
+  <details className="more">
+    <summary>{title}<span>{sub}</span></summary>
+    <div className="body">{children}</div>
+  </details>
 )
 
 export default function App() {
@@ -122,90 +131,89 @@ export default function App() {
       <aside className="side">
         <h1>Pizza calc</h1>
         <div className="side-body">
-
-        <div className="g">
-          <h2>Batch</h2>
-          <div className="row">
-            <F label="Pizzas">{num('pizzas')}</F>
-            <F label="Ball weight (g)">{num('ballG')}</F>
+          <div className="g">
+            <div className="row">
+              <F label="Pizzas">{num('pizzas')}</F>
+              <F label="Ball weight (g)">{num('ballG')}</F>
+            </div>
           </div>
-        </div>
 
-        <div className="g">
-          <h2>Flour</h2>
-          <F label="Type">
-            <select
-              value={s.flourId}
-              onChange={e => {
-                const f = FLOURS.find(x => x.id === e.target.value)
-                setS(p => ({ ...p, flourId: e.target.value, protein: f ? f.protein : p.protein, w: f ? f.w ?? 0 : p.w }))
-              }}
-            >
-              {FLOURS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-              <option value="custom">Other flour</option>
-            </select>
-          </F>
-          <div className="row">
-            <F label="W (if printed)">
-              <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
+          <div className="g">
+            <F label="Flour">
+              <select
+                value={s.flourId}
+                onChange={e => {
+                  const f = FLOURS.find(x => x.id === e.target.value)
+                  setS(p => ({ ...p, flourId: e.target.value, protein: f ? f.protein : p.protein, w: f ? f.w ?? 0 : p.w }))
+                }}
+              >
+                {FLOURS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                <option value="custom">Other flour</option>
+              </select>
             </F>
-            <F label="Protein (%)">
-              <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
-            </F>
-          </div>
-          <p className="hint">{flour ? `${flour.where}. ` : ''}{s.w > 0 ? `Using W ${s.w}.` : `No W entered, so W is estimated as ${Math.round(effW)} from protein.`}</p>
-        </div>
-
-        <div className="g">
-          <h2>Dough</h2>
-          <div className="row">
+            <div className="row">
+              <F label="W (if printed)">
+                <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
+              </F>
+              <F label="Protein (%)">
+                <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
+              </F>
+            </div>
+            <p className="hint">{flour ? `${flour.where}. ` : ''}{s.w > 0 ? `Using W ${s.w}.` : `No W entered, so W is estimated as ${Math.round(effW)} from protein.`}</p>
             <F label="Hydration (%)">{num('hydration', set, 0.5)}</F>
-            <F label="Salt (%)">{num('saltPct', set, 0.1)}</F>
-            <F label="Olive oil (%)">{num('oilPct', set, 0.5)}</F>
-            <F label="Sugar (%)">{num('sugarPct', set, 0.5)}</F>
+            {sug !== s.hydration && (
+              <p className="hint">Suggested for this flour and oven: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
+            )}
+            <Grp label="Yeast">
+              <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
+            </Grp>
           </div>
-          {sug !== s.hydration && (
-            <p className="hint">Suggested for this flour and oven: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
-          )}
-        </div>
 
-        <div className="g">
-          <h2>Yeast</h2>
-          <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
-        </div>
-
-        <div className="g">
-          <h2>Fermentation</h2>
-          <Seg
-            value={s.preset}
-            options={[...Object.keys(PRESETS), 'Custom'].map(k => [k, k] as [string, string])}
-            onPick={k => k in PRESETS && setS(p => ({ ...p, ...PRESETS[k as keyof typeof PRESETS], preset: k }))}
-          />
-          <div className="row">
-            <F label="Autolysis (min)">{num('autolysisMin', tune, 5)}</F>
-            <F label="Bulk at room (h)">{num('bulkH', tune, 0.5)}</F>
-            <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
-            <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
+          <div className="g">
+            <Grp label="Schedule">
+              <Seg
+                value={s.preset}
+                options={[...Object.keys(PRESETS), 'Custom'].map(k => [k, k] as [string, string])}
+                onPick={k => k in PRESETS && setS(p => ({ ...p, ...PRESETS[k as keyof typeof PRESETS], preset: k }))}
+              />
+            </Grp>
+            <p className="hint">Comfortable for this flour: {r.range.min} to {Math.round(r.range.max)} h in total, currently {s.bulkH + s.coldH + s.proofH} h.</p>
           </div>
-          <p className="hint">Comfortable for this flour: {r.range.min} to {Math.round(r.range.max)} h in total, currently {s.bulkH + s.coldH + s.proofH} h.</p>
-        </div>
 
-        <div className="g">
-          <h2>Kitchen</h2>
-          <div className="row">
-            <F label="Room (°C)">{num('roomC')}</F>
-            <F label="Fridge (°C)">{num('fridgeC')}</F>
-            <F label="Flour (°C)">{num('flourC')}</F>
-            <F label="Target dough (°C)">{num('ddtC')}</F>
+          <div className="stack">
+            <More title="Times" sub={`${s.autolysisMin} min autolysis, ${s.bulkH + s.coldH + s.proofH} h fermentation`}>
+              <div className="row">
+                <F label="Autolysis (min)">{num('autolysisMin', tune, 5)}</F>
+                <F label="Bulk at room (h)">{num('bulkH', tune, 0.5)}</F>
+                <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
+                <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
+              </div>
+            </More>
+            <More title="Salt, oil, sugar" sub={`Salt ${s.saltPct}%${s.oilPct ? `, oil ${s.oilPct}%` : ''}${s.sugarPct ? `, sugar ${s.sugarPct}%` : ''}`}>
+              <div className="row">
+                <F label="Salt (%)">{num('saltPct', set, 0.1)}</F>
+                <F label="Olive oil (%)">{num('oilPct', set, 0.5)}</F>
+                <F label="Sugar (%)">{num('sugarPct', set, 0.5)}</F>
+              </div>
+            </More>
+            <More title="Kitchen" sub={`${s.roomC} °C room, ${s.fridgeC} °C fridge`}>
+              <div className="row">
+                <F label="Room (°C)">{num('roomC')}</F>
+                <F label="Fridge (°C)">{num('fridgeC')}</F>
+                <F label="Flour (°C)">{num('flourC')}</F>
+                <F label="Target dough (°C)">{num('ddtC')}</F>
+              </div>
+              <Grp label="Mixing">
+                <Seg<Mixing> value={s.mixing} onPick={v => set('mixing', v)} options={[['hand', 'By hand'], ['stand', 'Stand mixer'], ['spiral', 'Spiral']]} />
+              </Grp>
+            </More>
+            <More title="Oven" sub={`${s.ovenC} °C, ${s.surface}`}>
+              <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
+              <Grp label="Baking surface">
+                <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
+              </Grp>
+            </More>
           </div>
-          <Seg<Mixing> value={s.mixing} onPick={v => set('mixing', v)} options={[['hand', 'By hand'], ['stand', 'Stand mixer'], ['spiral', 'Spiral']]} />
-        </div>
-
-        <div className="g">
-          <h2>Oven</h2>
-          <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
-          <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
-        </div>
         </div>
         <button type="button" className="link" onClick={() => setS(init)}>Reset to defaults</button>
       </aside>
