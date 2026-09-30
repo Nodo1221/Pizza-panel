@@ -18,9 +18,11 @@ const init: S = {
 
 const KEY = 'pizza-calc:v2'
 
-const SIDE_KEY = 'pizza-calc:side'
+const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
 const sideMax = () => Math.max(SIDE_MIN, Math.round(window.innerWidth * 0.7))
+// About a third of the window, so roughly 490 px on a 1450 px wide window.
+const defaultSide = () => Math.min(640, Math.max(380, Math.round(window.innerWidth * 0.34)))
 
 function loadSide() {
   try {
@@ -29,7 +31,7 @@ function loadSide() {
   } catch {
     // storage blocked: use the default width
   }
-  return 380
+  return defaultSide()
 }
 
 function load(): S {
@@ -66,16 +68,26 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
-  useEffect(() => {
+  // Only a width the user chose is saved, so the default keeps following the window size.
+  const pick = (n: number) => {
+    setSide(n)
     try {
-      localStorage.setItem(SIDE_KEY, String(side))
+      localStorage.setItem(SIDE_KEY, String(n))
     } catch {
       // storage blocked: the width just won't persist
     }
-  }, [side])
+  }
+  const resetSide = () => {
+    setSide(defaultSide())
+    try {
+      localStorage.removeItem(SIDE_KEY)
+    } catch {
+      // storage blocked: nothing to clear
+    }
+  }
   const drag = (e: RPointerEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const move = (ev: PointerEvent) => setSide(Math.min(sideMax(), Math.max(SIDE_MIN, Math.round(ev.clientX - 4))))
+    const move = (ev: PointerEvent) => pick(Math.min(sideMax(), Math.max(SIDE_MIN, Math.round(ev.clientX - 4))))
     const stop = () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
@@ -206,10 +218,10 @@ export default function App() {
         aria-valuemin={SIDE_MIN}
         tabIndex={0}
         onPointerDown={drag}
-        onDoubleClick={() => setSide(380)}
+        onDoubleClick={resetSide}
         onKeyDown={e => {
-          if (e.key === 'ArrowLeft') setSide(w => Math.max(SIDE_MIN, w - 20))
-          if (e.key === 'ArrowRight') setSide(w => Math.min(sideMax(), w + 20))
+          if (e.key === 'ArrowLeft') pick(Math.max(SIDE_MIN, side - 20))
+          if (e.key === 'ArrowRight') pick(Math.min(sideMax(), side + 20))
         }}
       />
 
