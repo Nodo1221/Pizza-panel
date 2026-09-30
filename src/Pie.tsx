@@ -1,17 +1,17 @@
 export interface Slice { key: string; name: string; g: number }
 
 const CX = 210
-const CY = 120
-const R = 86 // slices
-const RIM = 96 // outer edge of the crust
-const H = 240
-const GAP = 15 // minimum vertical distance between labels
+const CY = 125
+const R = 92 // slices
+const RIM = 103 // outer edge of the crust
+const H = 260
+const GAP = 17 // minimum vertical distance between labels
 const TAU = Math.PI * 2
 
 // Charred spots on the crust, as degrees and radius. Fixed so the pizza doesn't change between renders.
 const SPOTS = [[15, 2], [62, 1.5], [118, 2.2], [170, 1.6], [228, 2], [281, 1.7], [329, 2.3]].map(([deg, r]) => ({
-  x: CX + 91 * Math.cos((deg * Math.PI) / 180),
-  y: CY + 91 * Math.sin((deg * Math.PI) / 180),
+  x: CX + 97 * Math.cos((deg * Math.PI) / 180),
+  y: CY + 97 * Math.sin((deg * Math.PI) / 180),
   r,
 }))
 const at = (t: number, rad: number) => `${(CX + rad * Math.cos(t)).toFixed(2)} ${(CY + rad * Math.sin(t)).toFixed(2)}`
@@ -53,8 +53,8 @@ export default function Pie({ slices }: { slices: Slice[] }) {
   }
 
   return (
-    <svg className="pie" viewBox="0 0 420 240" role="img" aria-label="Share of each ingredient in the dough, by weight">
-      <circle className="crust" cx={CX} cy={CY} r="91" />
+    <svg className="pie" viewBox="0 0 420 260" role="img" aria-label="Share of each ingredient in the dough, by weight">
+      <circle className="crust" cx={CX} cy={CY} r="97" />
       {items.map(it => (
         <path
           key={it.key}
@@ -65,7 +65,7 @@ export default function Pie({ slices }: { slices: Slice[] }) {
         </path>
       ))}
       {SPOTS.map((p, i) => <circle key={i} className="spot" cx={p.x} cy={p.y} r={p.r} />)}
-      {cuts.map(t => <line key={t} className="cut" x1={CX} y1={CY} x2={CX + 97 * Math.cos(t)} y2={CY + 97 * Math.sin(t)} />)}
+      {cuts.map(t => <line key={t} className="cut" x1={CX} y1={CY} x2={CX + 104 * Math.cos(t)} y2={CY + 104 * Math.sin(t)} />)}
       {labels.map(({ it, s, y }) => {
         const ex = CX + s * (RIM + 22)
         const lx = ex + s * 6
