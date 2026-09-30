@@ -132,7 +132,7 @@ input, select {
 
 .recipe { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
 .recipe .tbl { flex: 1 1 320px; min-width: 0; }
-.pie { flex: 0 0 180px; width: 180px; margin: 0 auto; }
+.pie { flex: 1 1 340px; width: 100%; max-width: 420px; margin: 0 auto; }
 .pie .crust { fill: none; stroke: var(--crust); stroke-width: 10; }
 .pie .spot { fill: var(--char); }
 .pie path { stroke-width: 0.6; }
@@ -162,3 +162,7 @@ input, select {
 .side-body > .g { break-inside: avoid; }
 .grip { cursor: col-resize; touch-action: none; background: linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat; }
 .grip:hover, .grip:focus-visible { background: linear-gradient(var(--cold), var(--cold)) center / 3px 100% no-repeat; outline: none; }
+
+.pie text { font-size: 12px; fill: var(--ink); }
+.pie tspan { fill: var(--mute); }
+.pie .lead { fill: none; stroke: var(--mute); stroke-width: 1; }
