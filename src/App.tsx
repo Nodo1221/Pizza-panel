@@ -1,3 +1,5 @@
+import '@fontsource-variable/source-serif-4/wght.css'
+import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
 import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'

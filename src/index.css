@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Young+Serif&display=swap");
 
 :root {
   --table: #ece9e1;
@@ -19,7 +18,7 @@
   --p-oil: #aabd72;
   --p-sugar: #e8c2c9;
   --p-yeast: #8a5a34;
-  --serif: "Source Serif 4", Georgia, serif;
+  --serif: "Source Serif 4 Variable", Georgia, serif;
   --display: "Young Serif", Georgia, serif;
   color-scheme: light;
 }
