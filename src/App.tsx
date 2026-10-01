@@ -128,7 +128,7 @@ export default function App() {
   return (
     <div className="app" style={{ '--side': `${side}px` } as CSSProperties}>
       <aside className="side">
-        <h1>Pizza calc</h1>
+        <h1>Pizza panel</h1>
         <div className="side-body">
           <div className="g">
             <div className="row">
