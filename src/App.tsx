@@ -58,8 +58,14 @@ function Seg<T extends string>({ value, options, onPick }: { value: T; options: 
 const F = ({ label, children }: { label: string; children: ReactNode }) => (
   <label className="f"><span>{label}</span>{children}</label>
 )
-const Grp = ({ label, children }: { label: string; children: ReactNode }) => (
+const Grp = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
   <div className="f"><span>{label}</span>{children}</div>
+)
+const Tip = ({ children }: { children: ReactNode }) => (
+  <details className="tip">
+    <summary aria-label="More information">?</summary>
+    <div className="pop">{children}</div>
+  </details>
 )
 const More = ({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) => (
   <details className="more">
@@ -111,6 +117,17 @@ export default function App() {
   const flour = FLOURS.find(f => f.id === s.flourId)
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
+  const total = Math.round((s.bulkH + s.coldH + s.proofH) * 10) / 10
+  const outOfRange = total > r.range.max || total < r.range.min
+  const wNote = flour
+    ? s.w > 0 && s.w === flour.w
+      ? 'Preset flour: nothing to enter.'
+      : s.w > 0
+        ? 'Using your W.'
+        : `W ~${Math.round(effW)} estimated from protein (\u00b140).`
+    : s.w > 0
+      ? "Using your W. Protein isn't needed."
+      : `Enter W, or protein if W isn't printed. W ~${Math.round(effW)} estimated (\u00b140).`
   const first = r.stages[0]
 
   const num = (k: NumKey, put: typeof set = set, step = 1) => (
@@ -140,8 +157,25 @@ export default function App() {
           </div>
 
           <div className="g">
-            <F label="Flour">
+            <Grp label="Schedule">
+              <Seg
+                value={s.preset}
+                options={[...Object.keys(PRESETS), 'Custom'].map(k => [k, k] as [string, string])}
+                onPick={k => k in PRESETS && setS(p => ({ ...p, ...PRESETS[k as keyof typeof PRESETS], preset: k }))}
+              />
+            </Grp>
+            <div className="row">
+              <F label="Autolysis (min)">{num('autolysisMin', tune, 5)}</F>
+              <F label="Bulk at room (h)">{num('bulkH', tune, 0.5)}</F>
+              <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
+              <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
+            </div>
+          </div>
+
+          <div className="g">
+            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength and sets the hydration and fermentation advice. Protein only roughly predicts it, typically within \u00b140, so enter W when the pack prints it.</Tip></>}>
               <select
+                aria-label="Flour"
                 value={s.flourId}
                 onChange={e => {
                   const f = FLOURS.find(x => x.id === e.target.value)
@@ -151,44 +185,32 @@ export default function App() {
                 {FLOURS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 <option value="custom">Other flour</option>
               </select>
-            </F>
+            </Grp>
             <div className="row">
-              <F label="W (if printed)">
+              <F label="W">
                 <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
               </F>
               <F label="Protein (%)">
-                <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
+                <input type="number" step={0.1} value={s.protein} disabled={s.w > 0} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
               </F>
             </div>
-            <p className="hint">{flour ? `${flour.where}. ` : ''}{s.w > 0 ? `Using W ${s.w}.` : `No W entered, so W is estimated as ${Math.round(effW)} from protein.`}</p>
+            <p className="hint">{wNote}</p>
+            <p className={`hint${outOfRange ? ' bad' : ''}`}>Recommended fermentation: {r.range.min}\u2013{Math.round(r.range.max)} h (yours: {total} h)</p>
             <F label="Hydration (%)">{num('hydration', set, 0.5)}</F>
             {sug !== s.hydration && (
-              <p className="hint">Suggested for this flour and oven: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
+              <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
             )}
             <Grp label="Yeast">
               <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
             </Grp>
           </div>
 
-          <div className="g">
-            <Grp label="Schedule">
-              <Seg
-                value={s.preset}
-                options={[...Object.keys(PRESETS), 'Custom'].map(k => [k, k] as [string, string])}
-                onPick={k => k in PRESETS && setS(p => ({ ...p, ...PRESETS[k as keyof typeof PRESETS], preset: k }))}
-              />
-            </Grp>
-            <p className="hint">Comfortable for this flour: {r.range.min} to {Math.round(r.range.max)} h in total, currently {s.bulkH + s.coldH + s.proofH} h.</p>
-          </div>
-
           <div className="stack">
-            <More title="Times" sub={`${s.autolysisMin} min autolysis, ${s.bulkH + s.coldH + s.proofH} h fermentation`}>
-              <div className="row">
-                <F label="Autolysis (min)">{num('autolysisMin', tune, 5)}</F>
-                <F label="Bulk at room (h)">{num('bulkH', tune, 0.5)}</F>
-                <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
-                <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
-              </div>
+            <More title="Oven" sub={`${s.ovenC} \u00b0C, ${s.surface}`}>
+              <F label="Temperature (\u00b0C)">{num('ovenC', set, 5)}</F>
+              <Grp label="Baking surface">
+                <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
+              </Grp>
             </More>
             <More title="Salt, oil, sugar" sub={`Salt ${s.saltPct}%${s.oilPct ? `, oil ${s.oilPct}%` : ''}${s.sugarPct ? `, sugar ${s.sugarPct}%` : ''}`}>
               <div className="row">
@@ -197,21 +219,15 @@ export default function App() {
                 <F label="Sugar (%)">{num('sugarPct', set, 0.5)}</F>
               </div>
             </More>
-            <More title="Kitchen" sub={`${s.roomC} °C room, ${s.fridgeC} °C fridge`}>
+            <More title="Kitchen" sub={`${s.roomC} \u00b0C room, ${s.fridgeC} \u00b0C fridge`}>
               <div className="row">
-                <F label="Room (°C)">{num('roomC')}</F>
-                <F label="Fridge (°C)">{num('fridgeC')}</F>
-                <F label="Flour (°C)">{num('flourC')}</F>
-                <F label="Target dough (°C)">{num('ddtC')}</F>
+                <F label="Room (\u00b0C)">{num('roomC')}</F>
+                <F label="Fridge (\u00b0C)">{num('fridgeC')}</F>
+                <F label="Flour (\u00b0C)">{num('flourC')}</F>
+                <F label="Target dough (\u00b0C)">{num('ddtC')}</F>
               </div>
               <Grp label="Mixing">
                 <Seg<Mixing> value={s.mixing} onPick={v => set('mixing', v)} options={[['hand', 'By hand'], ['stand', 'Stand mixer'], ['spiral', 'Spiral']]} />
-              </Grp>
-            </More>
-            <More title="Oven" sub={`${s.ovenC} °C, ${s.surface}`}>
-              <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
-              <Grp label="Baking surface">
-                <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
               </Grp>
             </More>
           </div>
@@ -235,24 +251,7 @@ export default function App() {
       />
 
       <main className="main">
-        <section>
-          <div className="hd">
-            <h2>Timeline</h2>
-            <span>{dur(-first.start / 60000)} from the first step to the first pizza</span>
-          </div>
-          <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
-            {r.stages.filter(x => !x.overlap).map(x => (
-              <span key={x.label} title={`${x.label}: ${dur(x.min)}`} style={{ flexGrow: Math.sqrt(x.min), background: `var(--${x.kind})` }} />
-            ))}
-          </div>
-          <div className="key">
-            <span><i className="sw" style={{ background: 'var(--room)' }} />Room temperature</span>
-            <span><i className="sw" style={{ background: 'var(--cold)' }} />Fridge</span>
-            <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
-            <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
-          </div>
-        </section>
-
+        {r.warnings.filter(w => w.alert).map(w => <p className="alert" key={w.text}>{w.text}</p>)}
         <section className="menu">
           <div className="hd">
             <h2>Recipe</h2>
@@ -280,7 +279,25 @@ export default function App() {
           {r.dilute && (
             <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
           )}
-          {r.warnings.map(w => <p className="note" key={w}>{w}</p>)}
+          {r.warnings.filter(w => !w.alert).map(w => <p className="note" key={w.text}>{w.text}</p>)}
+        </section>
+
+        <section>
+          <div className="hd">
+            <h2>Timeline</h2>
+            <span>{dur(-first.start / 60000)} to first pizza</span>
+          </div>
+          <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
+            {r.stages.filter(x => !x.overlap).map(x => (
+              <span key={x.label} title={`${x.label}: ${dur(x.min)}`} style={{ flexGrow: Math.sqrt(x.min), background: `var(--${x.kind})` }} />
+            ))}
+          </div>
+          <div className="key">
+            <span><i className="sw" style={{ background: 'var(--room)' }} />Room temperature</span>
+            <span><i className="sw" style={{ background: 'var(--cold)' }} />Fridge</span>
+            <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
+            <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
+          </div>
         </section>
 
         <section className="ticket">

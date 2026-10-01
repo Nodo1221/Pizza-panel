@@ -137,18 +137,18 @@ export function compute(i: Inputs) {
     })
   stages.sort((a, b) => a.start - b.start)
 
-  const warnings: string[] = []
+  const warnings: { text: string; alert: boolean }[] = []
+  const alert = (text: string) => warnings.push({ text, alert: true })
   const total = i.bulkH + i.coldH + i.proofH
   const { min, max } = fermentRange(w)
-  const wText = i.w > 0 ? `W ${w.toFixed(0)}` : `W about ${w.toFixed(0)} (estimated from protein)`
-  if (total > max)
-    warnings.push(`${total.toFixed(0)} h of fermentation is long for ${wText}: comfortable up to about ${max.toFixed(0)} h. The dough will weaken and turn slack.`)
-  if (total < min)
-    warnings.push(`${wText} is strong for a ${total.toFixed(0)} h dough: aim for at least ${min} h, or blend with a weaker flour. Expect a tight dough that is hard to open.`)
-  if (waterTemp > 40) warnings.push(`The water would need to be ${wt} °C, which damages yeast. Lower the target dough temperature or use cooler flour.`)
-  if (waterTemp < 2) warnings.push(`The water would need to be ${wt} °C. Use ice water and lower the flour temperature.`)
+  const wText = i.w > 0 ? `W ${w.toFixed(0)}` : `W ~${w.toFixed(0)}`
+  const span = `${min}\u2013${max.toFixed(0)} h`
+  if (total > max) alert(`${total.toFixed(0)} h is too long for ${wText}. Aim for ${span} or the dough turns slack.`)
+  if (total < min) alert(`${total.toFixed(0)} h is too short for ${wText}. Aim for ${span} or the dough stays tight.`)
+  if (waterTemp > 40) alert(`Water would need to be ${wt} \u00b0C, too hot for yeast. Cool the flour or lower the target dough temperature.`)
+  if (waterTemp < 2) alert(`Water would need to be ${wt} \u00b0C. Use ice water and cooler flour.`)
   if ((i.surface === 'tray' || i.ovenC < 280) && i.sugarPct + i.oilPct === 0)
-    warnings.push('Below about 300 °C without a steel the crust colours slowly. About 1% sugar and 2% oil help.')
+    warnings.push({ text: 'Below about 300 \u00b0C without a steel the crust colours slowly. About 1% sugar and 2% oil help.', alert: false })
 
   return {
     flour,
