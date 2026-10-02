@@ -3,6 +3,7 @@
 export type YeastType = 'fresh' | 'instant' | 'active'
 export type Surface = 'tray' | 'stone' | 'steel'
 export type Mixing = 'hand' | 'stand' | 'spiral'
+export type Style = 'same' | 'overnight' | 'multi'
 
 export interface Inputs {
   pizzas: number
@@ -19,10 +20,7 @@ export interface Inputs {
   flourC: number
   ddtC: number
   mixing: Mixing
-  autolysisMin: number
-  bulkH: number
-  coldH: number
-  proofH: number
+  style: Style
   ovenC: number
   surface: Surface
 }
@@ -36,11 +34,9 @@ export interface Stage {
   overlap?: boolean
 }
 
-export const PRESETS = {
-  'Same day': { autolysisMin: 30, bulkH: 8, coldH: 0, proofH: 4 },
-  Overnight: { autolysisMin: 30, bulkH: 2, coldH: 18, proofH: 2.5 },
-  'Multi-day': { autolysisMin: 30, bulkH: 1.5, coldH: 62, proofH: 3 },
-}
+export const STYLES: Record<Style, string> = { same: 'Same day', overnight: 'Overnight', multi: 'Multi-day' }
+// Total fermentation hours each style aims for, before it is fitted to the flour.
+const WANT: Record<Style, number> = { same: 12, overnight: 24, multi: 48 }
 
 const FRICTION: Record<Mixing, number> = { hand: 4, stand: 12, spiral: 9 }
 const YEAST_X: Record<YeastType, number> = { fresh: 1, instant: 1 / 3, active: 0.4 }
@@ -84,7 +80,17 @@ export function suggestHydration(w: number, surface: Surface, ovenC: number) {
 
 export function compute(i: Inputs) {
   const w = i.w > 0 ? i.w : estimateW(i.protein)
-  const eq = i.bulkH * activity(i.roomC) + i.coldH * activity(i.fridgeC) + i.proofH * activity(i.roomC)
+
+  // The times are worked out here, not entered: the style sets the aim, the flour's W limits it.
+  const { min, max } = fermentRange(w)
+  const want = WANT[i.style]
+  const total = clamp(want, min, max)
+  const chilled = i.style !== 'same' || total > 14
+  const bulkH = chilled ? 2 : total * 0.65
+  const proofH = chilled ? 2.5 : total - bulkH
+  const coldH = chilled ? Math.max(0, total - bulkH - proofH) : 0
+  const autolysisMin = w < 200 ? 20 : w < 320 ? 30 : 45
+  const eq = bulkH * activity(i.roomC) + coldH * activity(i.fridgeC) + proofH * activity(i.roomC)
   const freshPct = clamp(K / Math.max(eq, 0.5), 0.02, 2)
   const pct: Record<YeastType, number> = {
     fresh: freshPct,
@@ -120,12 +126,12 @@ export function compute(i: Inputs) {
   }
   const wt = waterTemp.toFixed(0)
   before('Shape and top', 'prep', 20, 'Take the balls out only once the oven is at temperature')
-  before('Balls at room temperature', 'room', i.proofH * 60, `${i.roomC} °C, covered`)
-  before('Balls in the fridge', 'cold', i.coldH * 60, `${i.fridgeC} °C, sealed and lightly oiled`)
+  before('Balls at room temperature', 'room', proofH * 60, `${i.roomC} °C, covered`)
+  before('Balls in the fridge', 'cold', coldH * 60, `${i.fridgeC} °C, sealed and lightly oiled`)
   before('Divide and ball', 'prep', 15, 'Tight balls, 1 cm apart in a lidded tray')
-  before('Bulk rise', 'room', i.bulkH * 60, `${i.roomC} °C, covered`)
+  before('Bulk rise', 'room', bulkH * 60, `${i.roomC} °C, covered`)
   before('Mix and knead', 'prep', 12, `Add salt and yeast. Aim for a ${i.ddtC} °C dough`)
-  before('Autolysis', 'room', i.autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
+  before('Autolysis', 'room', autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
   if (i.surface !== 'tray')
     stages.push({
       label: 'Oven preheat',
@@ -139,12 +145,9 @@ export function compute(i: Inputs) {
 
   const warnings: { text: string; alert: boolean }[] = []
   const alert = (text: string) => warnings.push({ text, alert: true })
-  const total = i.bulkH + i.coldH + i.proofH
-  const { min, max } = fermentRange(w)
   const wText = i.w > 0 ? `W ${w.toFixed(0)}` : `W ~${w.toFixed(0)}`
-  const span = `${min}\u2013${max.toFixed(0)} h`
-  if (total > max) alert(`${total.toFixed(0)} h is too long for ${wText}. Aim for ${span} or the dough turns slack.`)
-  if (total < min) alert(`${total.toFixed(0)} h is too short for ${wText}. Aim for ${span} or the dough stays tight.`)
+  if (Math.abs(total - want) > 2)
+    alert(`${STYLES[i.style]} wants about ${want} h, but ${wText} works for ${min}\u2013${max.toFixed(0)} h. Planned ${total.toFixed(0)} h.`)
   if (waterTemp > 40) alert(`Water would need to be ${wt} \u00b0C, too hot for yeast. Cool the flour or lower the target dough temperature.`)
   if (waterTemp < 2) alert(`Water would need to be ${wt} \u00b0C. Use ice water and cooler flour.`)
   if ((i.surface === 'tray' || i.ovenC < 280) && i.sugarPct + i.oilPct === 0)
@@ -163,6 +166,7 @@ export function compute(i: Inputs) {
     bakeMin,
     stages,
     range: { min, max },
+    plan: { autolysisMin, bulkH, coldH, proofH, total },
     warnings,
   }
 }

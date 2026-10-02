@@ -2,9 +2,9 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { PRESETS, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Surface, type YeastType } from './core/dough'
+import { STYLES, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
-type S = Inputs & { flourId: string; preset: string }
+type S = Inputs & { flourId: string }
 type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
@@ -13,11 +13,11 @@ const init: S = {
   pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275), saltPct: 2.8, oilPct: 0, sugarPct: 0,
   protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
-  ...PRESETS.Overnight, preset: 'Overnight',
+  style: 'overnight',
   ovenC: 275, surface: 'tray',
 }
 
-const KEY = 'pizza-calc:v2'
+const KEY = 'pizza-calc:v3'
 
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
@@ -112,13 +112,11 @@ export default function App() {
     window.addEventListener('pointerup', stop)
   }
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
-  const tune = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v, preset: 'Custom' }))
   const r = useMemo(() => compute(s), [s])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
-  const total = Math.round((s.bulkH + s.coldH + s.proofH) * 10) / 10
-  const outOfRange = total > r.range.max || total < r.range.min
+  const planned = Math.round(r.plan.total * 10) / 10
   const wNote = flour
     ? s.w > 0 && s.w === flour.w
       ? 'Preset flour: nothing to enter.'
@@ -158,18 +156,12 @@ export default function App() {
 
           <div className="g">
             <Grp label="Schedule">
-              <Seg
-                value={s.preset}
-                options={[...Object.keys(PRESETS), 'Custom'].map(k => [k, k] as [string, string])}
-                onPick={k => k in PRESETS && setS(p => ({ ...p, ...PRESETS[k as keyof typeof PRESETS], preset: k }))}
+              <Seg<Style>
+                value={s.style}
+                options={(Object.keys(STYLES) as Style[]).map(k => [k, STYLES[k]] as [Style, string])}
+                onPick={v => set('style', v)}
               />
             </Grp>
-            <div className="row">
-              <F label="Autolysis (min)">{num('autolysisMin', tune, 5)}</F>
-              <F label="Bulk at room (h)">{num('bulkH', tune, 0.5)}</F>
-              <F label="Fridge (h)">{num('coldH', tune, 1)}</F>
-              <F label="Balls at room (h)">{num('proofH', tune, 0.5)}</F>
-            </div>
           </div>
 
           <div className="g">
@@ -195,7 +187,7 @@ export default function App() {
               </F>
             </div>
             <p className="hint">{wNote}</p>
-            <p className={`hint${outOfRange ? ' bad' : ''}`}>Recommended fermentation: {r.range.min}–{Math.round(r.range.max)} h (yours: {total} h)</p>
+            <p className="hint">Recommended: {r.range.min}–{Math.round(r.range.max)} h, planned: {planned} h</p>
             <F label="Hydration (%)">{num('hydration', set, 0.5)}</F>
             {sug !== s.hydration && (
               <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
