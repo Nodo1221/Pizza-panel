@@ -124,10 +124,10 @@ export default function App() {
       ? 'Preset flour: nothing to enter.'
       : s.w > 0
         ? 'Using your W.'
-        : `W ~${Math.round(effW)} estimated from protein (\u00b140).`
+        : `W ~${Math.round(effW)} estimated from protein (±40).`
     : s.w > 0
       ? "Using your W. Protein isn't needed."
-      : `Enter W, or protein if W isn't printed. W ~${Math.round(effW)} estimated (\u00b140).`
+      : `Enter W, or protein if W isn't printed. W ~${Math.round(effW)} estimated (±40).`
   const first = r.stages[0]
 
   const num = (k: NumKey, put: typeof set = set, step = 1) => (
@@ -173,7 +173,7 @@ export default function App() {
           </div>
 
           <div className="g">
-            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength and sets the hydration and fermentation advice. Protein only roughly predicts it, typically within \u00b140, so enter W when the pack prints it.</Tip></>}>
+            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength and sets the hydration and fermentation advice. Protein only roughly predicts it, typically within ±40, so enter W when the pack prints it.</Tip></>}>
               <select
                 aria-label="Flour"
                 value={s.flourId}
@@ -195,7 +195,7 @@ export default function App() {
               </F>
             </div>
             <p className="hint">{wNote}</p>
-            <p className={`hint${outOfRange ? ' bad' : ''}`}>Recommended fermentation: {r.range.min}\u2013{Math.round(r.range.max)} h (yours: {total} h)</p>
+            <p className={`hint${outOfRange ? ' bad' : ''}`}>Recommended fermentation: {r.range.min}–{Math.round(r.range.max)} h (yours: {total} h)</p>
             <F label="Hydration (%)">{num('hydration', set, 0.5)}</F>
             {sug !== s.hydration && (
               <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
@@ -206,8 +206,8 @@ export default function App() {
           </div>
 
           <div className="stack">
-            <More title="Oven" sub={`${s.ovenC} \u00b0C, ${s.surface}`}>
-              <F label="Temperature (\u00b0C)">{num('ovenC', set, 5)}</F>
+            <More title="Oven" sub={`${s.ovenC} °C, ${s.surface}`}>
+              <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
               <Grp label="Baking surface">
                 <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
               </Grp>
@@ -219,12 +219,12 @@ export default function App() {
                 <F label="Sugar (%)">{num('sugarPct', set, 0.5)}</F>
               </div>
             </More>
-            <More title="Kitchen" sub={`${s.roomC} \u00b0C room, ${s.fridgeC} \u00b0C fridge`}>
+            <More title="Kitchen" sub={`${s.roomC} °C room, ${s.fridgeC} °C fridge`}>
               <div className="row">
-                <F label="Room (\u00b0C)">{num('roomC')}</F>
-                <F label="Fridge (\u00b0C)">{num('fridgeC')}</F>
-                <F label="Flour (\u00b0C)">{num('flourC')}</F>
-                <F label="Target dough (\u00b0C)">{num('ddtC')}</F>
+                <F label="Room (°C)">{num('roomC')}</F>
+                <F label="Fridge (°C)">{num('fridgeC')}</F>
+                <F label="Flour (°C)">{num('flourC')}</F>
+                <F label="Target dough (°C)">{num('ddtC')}</F>
               </div>
               <Grp label="Mixing">
                 <Seg<Mixing> value={s.mixing} onPick={v => set('mixing', v)} options={[['hand', 'By hand'], ['stand', 'Stand mixer'], ['spiral', 'Spiral']]} />
