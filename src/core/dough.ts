@@ -9,9 +9,6 @@ export interface Inputs {
   pizzas: number
   ballG: number
   hydration: number
-  saltPct: number
-  oilPct: number
-  sugarPct: number
   protein: number
   w: number // alveograph W, 0 if unknown
   yeast: YeastType
@@ -90,6 +87,12 @@ export function compute(i: Inputs) {
   const proofH = chilled ? 2.5 : total - bulkH
   const coldH = chilled ? Math.max(0, total - bulkH - proofH) : 0
   const autolysisMin = w < 200 ? 20 : w < 320 ? 30 : 45
+
+  // Worked out, not entered. Salt follows the AVPN dose of 50-55 g per litre of water (5% to 5.5% of the
+  // water, more for strong flour). Oil and sugar only below 350 C, where a home oven needs help browning.
+  const saltPct = i.hydration * (0.05 + 0.005 * clamp((w - 280) / 30, 0, 1))
+  const oilPct = i.ovenC < 350 ? 2 : 0
+  const sugarPct = i.ovenC < 350 ? 1 : 0
   const eq = bulkH * activity(i.roomC) + coldH * activity(i.fridgeC) + proofH * activity(i.roomC)
   const freshPct = clamp(K / Math.max(eq, 0.5), 0.02, 2)
   const pct: Record<YeastType, number> = {
@@ -100,7 +103,7 @@ export function compute(i: Inputs) {
   const yPct = pct[i.yeast]
 
   const dough = i.pizzas * i.ballG
-  const flour = dough / (1 + (i.hydration + i.saltPct + i.oilPct + i.sugarPct + yPct) / 100)
+  const flour = dough / (1 + (i.hydration + saltPct + oilPct + sugarPct + yPct) / 100)
   const amt = (p: number) => (flour * p) / 100
   const yeastG = amt(yPct)
   const dilute = yeastG > 0 && yeastG < 1 ? { solution: yeastG * 100, waterIn: yeastG * 99 } : null
@@ -150,15 +153,13 @@ export function compute(i: Inputs) {
     alert(`${STYLES[i.style]} wants about ${want} h, but ${wText} works for ${min}\u2013${max.toFixed(0)} h. Planned ${total.toFixed(0)} h.`)
   if (waterTemp > 40) alert(`Water would need to be ${wt} \u00b0C, too hot for yeast. Cool the flour or lower the target dough temperature.`)
   if (waterTemp < 2) alert(`Water would need to be ${wt} \u00b0C. Use ice water and cooler flour.`)
-  if ((i.surface === 'tray' || i.ovenC < 280) && i.sugarPct + i.oilPct === 0)
-    warnings.push({ text: 'Below about 300 \u00b0C without a steel the crust colours slowly. About 1% sugar and 2% oil help.', alert: false })
 
   return {
     flour,
     water: amt(i.hydration),
-    salt: amt(i.saltPct),
-    oil: amt(i.oilPct),
-    sugar: amt(i.sugarPct),
+    salt: amt(saltPct),
+    oil: amt(oilPct),
+    sugar: amt(sugarPct),
     yeastG,
     yeastAll: { fresh: amt(pct.fresh), instant: amt(pct.instant), active: amt(pct.active) },
     dilute,
@@ -166,6 +167,7 @@ export function compute(i: Inputs) {
     bakeMin,
     stages,
     range: { min, max },
+    pct: { salt: saltPct, oil: oilPct, sugar: sugarPct },
     plan: { autolysisMin, bulkH, coldH, proofH, total },
     warnings,
   }

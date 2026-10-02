@@ -10,14 +10,14 @@ type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
 
 const init: S = {
-  pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275), saltPct: 2.8, oilPct: 0, sugarPct: 0,
+  pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275),
   protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   style: 'overnight',
   ovenC: 275, surface: 'tray',
 }
 
-const KEY = 'pizza-calc:v3'
+const KEY = 'pizza-calc:v4'
 
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
@@ -136,9 +136,9 @@ export default function App() {
   const rows: Row[] = [
     { key: 'flour', name: 'Flour', g: r.flour, pc: 100, d: 0 },
     { key: 'water', name: 'Water', g: r.water, pc: s.hydration, d: 0 },
-    { key: 'salt', name: 'Salt', g: r.salt, pc: s.saltPct, d: 1 },
-    ...(s.oilPct > 0 ? [{ key: 'oil', name: 'Olive oil', g: r.oil, pc: s.oilPct, d: 1 }] : []),
-    ...(s.sugarPct > 0 ? [{ key: 'sugar', name: 'Sugar', g: r.sugar, pc: s.sugarPct, d: 1 }] : []),
+    { key: 'salt', name: 'Salt', g: r.salt, pc: r.pct.salt, d: 1 },
+    ...(r.pct.oil > 0 ? [{ key: 'oil', name: 'Olive oil', g: r.oil, pc: r.pct.oil, d: 1 }] : []),
+    ...(r.pct.sugar > 0 ? [{ key: 'sugar', name: 'Sugar', g: r.sugar, pc: r.pct.sugar, d: 1 }] : []),
     { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: (r.yeastG / r.flour) * 100, d: 2 },
   ]
 
@@ -203,13 +203,6 @@ export default function App() {
               <Grp label="Baking surface">
                 <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
               </Grp>
-            </More>
-            <More title="Salt, oil, sugar" sub={`Salt ${s.saltPct}%${s.oilPct ? `, oil ${s.oilPct}%` : ''}${s.sugarPct ? `, sugar ${s.sugarPct}%` : ''}`}>
-              <div className="row">
-                <F label="Salt (%)">{num('saltPct', set, 0.1)}</F>
-                <F label="Olive oil (%)">{num('oilPct', set, 0.5)}</F>
-                <F label="Sugar (%)">{num('sugarPct', set, 0.5)}</F>
-              </div>
             </More>
             <More title="Kitchen" sub={`${s.roomC} °C room, ${s.fridgeC} °C fridge`}>
               <div className="row">
