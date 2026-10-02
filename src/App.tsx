@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as 
 import { FLOURS } from './core/flours'
 import { STYLES, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
-type S = Inputs & { flourId: string }
+// w is 0 when the pack's W has not been entered; the app then estimates it from protein.
+type S = Omit<Inputs, 'w' | 'wEst'> & { flourId: string; protein: number; w: number }
 type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
@@ -17,7 +18,7 @@ const init: S = {
   ovenC: 275, surface: 'tray',
 }
 
-const KEY = 'pizza-calc:v4'
+const KEY = 'pizza-calc:v5'
 
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
@@ -112,24 +113,16 @@ export default function App() {
     window.addEventListener('pointerup', stop)
   }
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
-  const r = useMemo(() => compute(s), [s])
-  const flour = FLOURS.find(f => f.id === s.flourId)
+
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
+  const r = useMemo(() => compute({ ...s, w: effW, wEst: !(s.w > 0) }), [s, effW])
+  const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
-  const wNote = flour
-    ? s.w > 0 && s.w === flour.w
-      ? 'Preset flour: nothing to enter.'
-      : s.w > 0
-        ? 'Using your W.'
-        : `W ~${Math.round(effW)} estimated from protein (±40).`
-    : s.w > 0
-      ? "Using your W. Protein isn't needed."
-      : `Enter W, or protein if W isn't printed. W ~${Math.round(effW)} estimated (±40).`
   const first = r.stages[0]
 
-  const num = (k: NumKey, put: typeof set = set, step = 1) => (
-    <input type="number" inputMode="decimal" step={step} value={s[k]} onChange={e => put(k, parseFloat(e.target.value) || 0)} />
+  const num = (k: NumKey, step = 1) => (
+    <input type="number" inputMode="decimal" step={step} value={s[k]} onChange={e => set(k, parseFloat(e.target.value) || 0)} />
   )
   const yName = { fresh: 'fresh', instant: 'instant dry', active: 'active dry' }[s.yeast]
   type Row = { key: string; name: string; g: number; pc: number; d: number }
@@ -137,9 +130,7 @@ export default function App() {
     { key: 'flour', name: 'Flour', g: r.flour, pc: 100, d: 0 },
     { key: 'water', name: 'Water', g: r.water, pc: s.hydration, d: 0 },
     { key: 'salt', name: 'Salt', g: r.salt, pc: r.pct.salt, d: 1 },
-    ...(r.pct.oil > 0 ? [{ key: 'oil', name: 'Olive oil', g: r.oil, pc: r.pct.oil, d: 1 }] : []),
-    ...(r.pct.sugar > 0 ? [{ key: 'sugar', name: 'Sugar', g: r.sugar, pc: r.pct.sugar, d: 1 }] : []),
-    { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: (r.yeastG / r.flour) * 100, d: 2 },
+    { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: r.pct.yeast, d: 2 },
   ]
 
   return (
@@ -165,7 +156,7 @@ export default function App() {
           </div>
 
           <div className="g">
-            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength and sets the hydration and fermentation advice. Protein only roughly predicts it, typically within ±40, so enter W when the pack prints it.</Tip></>}>
+            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength. It sets the hydration and the fermentation advice. If the pack has no W, enter the protein instead: W is then estimated from it, typically within ±40.</Tip></>}>
               <select
                 aria-label="Flour"
                 value={s.flourId}
@@ -182,13 +173,13 @@ export default function App() {
               <F label="W">
                 <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
               </F>
-              <F label="Protein (%)">
-                <input type="number" step={0.1} value={s.protein} disabled={s.w > 0} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0 }))} />
+              <F label="Or protein (%)">
+                <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0, w: 0 }))} />
               </F>
             </div>
-            <p className="hint">{wNote}</p>
+            {s.w <= 0 && <p className="hint">W ~{Math.round(effW)} estimated from protein (±40).</p>}
             <p className="hint">Recommended: {r.range.min}–{Math.round(r.range.max)} h, planned: {planned} h</p>
-            <F label="Hydration (%)">{num('hydration', set, 0.5)}</F>
+            <F label="Hydration (%)">{num('hydration', 0.5)}</F>
             {sug !== s.hydration && (
               <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
             )}
@@ -197,17 +188,23 @@ export default function App() {
             </Grp>
           </div>
 
+          <div className="g">
+            <div className="row">
+              <F label="Room (°C)">{num('roomC')}</F>
+              <F label="Fridge (°C)">{num('fridgeC')}</F>
+            </div>
+          </div>
+
+          <div className="g">
+            <F label="Oven (°C)">{num('ovenC', 5)}</F>
+            <Grp label="Baking surface">
+              <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
+            </Grp>
+          </div>
+
           <div className="stack">
-            <More title="Oven" sub={`${s.ovenC} °C, ${s.surface}`}>
-              <F label="Temperature (°C)">{num('ovenC', set, 5)}</F>
-              <Grp label="Baking surface">
-                <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
-              </Grp>
-            </More>
-            <More title="Kitchen" sub={`${s.roomC} °C room, ${s.fridgeC} °C fridge`}>
+            <More title="Water temperature" sub={`${r.waterTemp.toFixed(0)} °C`}>
               <div className="row">
-                <F label="Room (°C)">{num('roomC')}</F>
-                <F label="Fridge (°C)">{num('fridgeC')}</F>
                 <F label="Flour (°C)">{num('flourC')}</F>
                 <F label="Target dough (°C)">{num('ddtC')}</F>
               </div>
@@ -236,35 +233,24 @@ export default function App() {
       />
 
       <main className="main">
-        {r.warnings.filter(w => w.alert).map(w => <p className="alert" key={w.text}>{w.text}</p>)}
-        <section className="menu">
+        {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
+
+        <section>
           <div className="hd">
             <h2>Recipe</h2>
             <span>{s.pizzas} × {s.ballG} g</span>
           </div>
-          <div className="cols">
-            <div>
-              {rows.map(x => (
-                <div className="line big" key={x.key}>
-                  <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
-                  <span className="dots" />
-                  <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
-                  <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
-                </div>
-              ))}
+          {rows.map(x => (
+            <div className="line big" key={x.key}>
+              <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
+              <span className="dots" />
+              <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
+              <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
             </div>
-            <div className="aside">
-              <div className="line"><span>Water temperature</span><span className="dots" /><b>{r.waterTemp.toFixed(0)} °C</b></div>
-              <p className="hint">The same dough with another yeast</p>
-              <div className="line"><span>Fresh</span><span className="dots" /><b>{r.yeastAll.fresh.toFixed(2)} g</b></div>
-              <div className="line"><span>Instant dry</span><span className="dots" /><b>{r.yeastAll.instant.toFixed(2)} g</b></div>
-              <div className="line"><span>Active dry</span><span className="dots" /><b>{r.yeastAll.active.toFixed(2)} g</b></div>
-            </div>
-          </div>
+          ))}
           {r.dilute && (
             <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
           )}
-          {r.warnings.filter(w => !w.alert).map(w => <p className="note" key={w.text}>{w.text}</p>)}
         </section>
 
         <section>
@@ -285,7 +271,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="ticket">
+        <section>
           <div className="hd"><h2>Schedule</h2></div>
           {r.stages.map(x => (
             <div className="item" key={x.label}>
