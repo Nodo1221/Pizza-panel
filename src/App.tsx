@@ -235,7 +235,17 @@ export default function App() {
                 />
               </F>
               <Grp label="Thickness">
-                <Seg<ThickOption> value={s.thick} options={THICK_LABELS} onPick={v => set('thick', v)} />
+                <div className="slider-row">
+                  <input
+                    type="range" min={0} max={2} step={1}
+                    value={s.thick === 'light' ? 0 : s.thick === 'classic' ? 1 : 2}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      set('thick', v === 0 ? 'light' : v === 1 ? 'classic' : 'thick')
+                    }}
+                  />
+                  <span className="slider-label">{s.thick === 'light' ? 'Thin' : s.thick === 'classic' ? 'Classic' : 'Thick'}</span>
+                </div>
               </Grp>
             </div>
             {s.diamCm > 0 && <p className="hint">{effBallG} g per ball from ⌀{s.diamCm} cm ({s.thick}).</p>}
