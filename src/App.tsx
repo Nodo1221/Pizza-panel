@@ -2,7 +2,7 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
+import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
 // diamCm is 0 when the user has not entered a diameter; ballG is then used directly.
@@ -15,7 +15,7 @@ const ballGFromDiam = (diam: number, thick: ThickOption) =>
 const diamFromBallG = (g: number, thick: ThickOption) =>
   Math.round(2 * Math.sqrt(g / (THICK_TF[thick] * Math.PI)))
 
-type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null; diamCm: number; thick: ThickOption }
+type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct' | 'flourC' | 'ddtC' | 'mixing'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null; diamCm: number; thick: ThickOption }
 
 type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
@@ -25,7 +25,7 @@ const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round
 const init: S = {
   pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275),
   protein: 12.5, w: 260, flourId: 'caputo-pizzeria', yeast: 'fresh',
-  roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
+  roomC: 21, fridgeC: 4,
   style: 'overnight',
   ovenC: 275, surface: 'tray',
   browning: false, oilPct: null, sugarPct: null,
@@ -163,7 +163,7 @@ export default function App() {
   const def = enrichment(s.ovenC)
   const r = useMemo(() => {
     const add = s.browning ? { oilPct: s.oilPct ?? def.oilPct, sugarPct: s.sugarPct ?? def.sugarPct } : { oilPct: 0, sugarPct: 0 }
-    return compute({ ...s, ballG: effBallG, ...add, w: effW, wEst: !(s.w > 0) })
+    return compute({ ...s, ballG: effBallG, flourC: 20, ddtC: 24, mixing: 'hand', ...add, w: effW, wEst: !(s.w > 0) })
   }, [s, effW, effBallG, def.oilPct, def.sugarPct])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
@@ -262,13 +262,24 @@ export default function App() {
           </div>
 
           <div className="g">
-            <Grp label={<>Flour<Tip>{flour ? `${flour.where}. ` : ''}W is the flour's baking strength. It sets the hydration and the fermentation advice. If the pack has no W, enter the protein instead: W is then estimated from it, typically within ±40.</Tip></>}>
+            <Grp label={<>Flour{flour && <Tip>{flour.where}</Tip>}</>}>
               <select
                 aria-label="Flour"
                 value={s.flourId}
                 onChange={e => {
                   const f = FLOURS.find(x => x.id === e.target.value)
-                  setS(p => ({ ...p, flourId: e.target.value, protein: f ? f.protein : p.protein, w: f ? f.w ?? 0 : p.w }))
+                  setS(p => {
+                    const newW = f ? (f.w ?? 0) : p.w
+                    const newProtein = f ? f.protein : p.protein
+                    const newEffW = newW > 0 ? newW : estimateW(newProtein)
+                    return {
+                      ...p,
+                      flourId: e.target.value,
+                      protein: newProtein,
+                      w: newW,
+                      hydration: suggestHydration(newEffW, p.surface, p.ovenC),
+                    }
+                  })
                 }}
               >
                 {FLOURS.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -276,14 +287,14 @@ export default function App() {
               </select>
             </Grp>
             <div className="row">
-              <F label="W">
+              <Grp label={<>W<Tip>Baking strength. Sets the suggested hydration and fermentation range. If the pack has no W, use protein % instead — W is estimated from it (±40).</Tip></>}>
                 <input
                   type="number" min={LIMITS.w.min} max={LIMITS.w.max} step={LIMITS.w.step}
                   value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} aria-invalid={s.w !== 0 && bad('w', s.w)}
                   onChange={e => setS(p => ({ ...p, flourId: 'custom', w: e.target.value === '' ? NaN : parseFloat(e.target.value) }))}
                   onBlur={() => s.w !== 0 && set('w', fit('w', Number.isNaN(s.w) ? LIMITS.w.min : s.w))}
                 />
-              </F>
+              </Grp>
               <F label="Or protein (%)">
                 <input
                   type="number" min={LIMITS.protein.min} max={LIMITS.protein.max} step={LIMITS.protein.step}
@@ -334,18 +345,6 @@ export default function App() {
                 <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray'], ['stone', 'Stone'], ['steel', 'Steel']]} />
               </Grp>
             </div>
-          </div>
-
-          <div className="stack">
-            <More title="Water temperature" sub={`${r.waterTemp.toFixed(0)} °C`}>
-              <div className="row">
-                <F label="Flour (°C)">{num('flourC')}</F>
-                <F label="Target dough (°C)">{num('ddtC')}</F>
-              </div>
-              <Grp label="Mixing">
-                <Seg<Mixing> value={s.mixing} onPick={v => set('mixing', v)} options={[['hand', 'By hand'], ['stand', 'Stand mixer'], ['spiral', 'Spiral']]} />
-              </Grp>
-            </More>
           </div>
         </div>
         <button type="button" className="link" onClick={() => setS(init)}>Reset to defaults</button>
