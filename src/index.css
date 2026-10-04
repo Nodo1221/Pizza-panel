@@ -131,10 +131,6 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .big em { font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 
-.item { padding: 5px 0; }
-.item .line { font-size: 16px; }
-.item b { white-space: nowrap; }
-.item em { font-size: 14px; color: var(--mute); }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }

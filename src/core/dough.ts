@@ -210,7 +210,7 @@ export function compute(raw: Inputs) {
       kind: 'oven',
       start: -60 * M,
       min: 60,
-      note: 'oven on high with the stone or steel',
+      note: 'with the stone or steel',
       overlap: true,
     })
   stages.sort((a, b) => a.start - b.start)

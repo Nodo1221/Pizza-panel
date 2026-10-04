@@ -9,6 +9,7 @@ type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct'> & { flourId: string;
 
 type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
+const durParts = (m: number): [string, string] => (m >= 90 ? [(m / 60).toFixed(1), 'h'] : [String(Math.round(m)), 'min'])
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
 
 const init: S = {
@@ -337,16 +338,17 @@ export default function App() {
 
         <section>
           <div className="hd"><h2>Schedule</h2></div>
-          {r.stages.map(x => (
-            <div className="item" key={x.label}>
-              <div className="line">
+          {r.stages.map(x => {
+            const [v, u] = durParts(x.min)
+            return (
+              <div className="line big" key={x.label}>
                 <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
-                <em>{x.note}</em>
                 <span className="dots" />
-                <span>{dur(x.min)}</span>
+                <small>{x.note}</small>
+                <strong>{v} <em>{u}</em></strong>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </section>
       </main>
     </div>
