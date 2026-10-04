@@ -2,7 +2,7 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { googleCalendarUrl, icsFile } from './core/calendar'
+import { googleCalendarUrl } from './core/calendar'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
@@ -141,6 +141,7 @@ export default function App() {
   const [side, setSide] = useState(loadSide)
   const [anchorTime, setAnchorTime] = useState(() => toHHMM(Date.now()))
   const [calOff, setCalOff] = useState<string[]>([])
+  const [popBlocked, setPopBlocked] = useState(false)
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -188,16 +189,9 @@ export default function App() {
   const calPicked = calStages.filter(x => !calOff.includes(x.label))
   const addToCalendar = () => {
     const events = calPicked.map(x => ({ title: `${x.label} (pizza dough)`, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note }))
-    if (events.length === 1) {
-      window.open(googleCalendarUrl({ ...events[0], tz: TZ }), '_blank', 'noopener')
-      return
-    }
-    const url = URL.createObjectURL(new Blob([icsFile(events)], { type: 'text/calendar' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'pizza-dough.ics'
-    a.click()
-    URL.revokeObjectURL(url)
+    // Google's link creates one event, so each ticked stage opens in its own tab.
+    const opened = events.map(e => window.open(googleCalendarUrl({ ...e, tz: TZ }), '_blank'))
+    setPopBlocked(opened.some(w => w === null))
   }
 
   const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
@@ -461,8 +455,9 @@ export default function App() {
                   </label>
                 ))}
                 <button type="button" className="go" disabled={calPicked.length === 0} onClick={addToCalendar}>
-                  {calPicked.length > 1 ? `Download calendar file (${calPicked.length})` : 'Open in Google Calendar'}
+                  Add to Google Calendar
                 </button>
+                {popBlocked && <p className="hint">Your browser blocked some tabs. Allow pop-ups for this site and try again.</p>}
               </div>
             </details>
           </div>

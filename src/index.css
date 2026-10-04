@@ -174,11 +174,12 @@ section > .hint { margin-top: 12px; }
 .hd.mid { align-items: center; }
 .cal-menu summary { width: 36px; height: 36px; border: 0; border-radius: 3px; background: none; color: var(--mute); }
 .cal-menu summary:hover, .cal-menu[open] summary { background: none; color: var(--ink); }
-.cal-menu .pop { left: auto; right: 0; top: 40px; width: 340px; display: grid; gap: 2px; padding: 8px; border: 0; background: var(--sheet); }
+.cal-menu .pop { left: auto; right: 0; top: 40px; width: 340px; display: grid; gap: 2px; padding: 8px; border: 1px solid var(--dot); background: var(--sheet); }
 .cal-menu .pick { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 3px; color: var(--ink); cursor: pointer; }
 .cal-menu .pick:hover { background: var(--table); }
 .cal-menu .pick small { margin-left: auto; font-size: 13px; color: var(--mute); white-space: nowrap; }
 .cal-menu input[type='checkbox'] { width: 16px; height: 16px; padding: 0; margin: 0; accent-color: var(--ink); flex-shrink: 0; }
+.cal-menu .pop > .hint { margin: 4px 8px 2px; }
 .cal-menu .go { margin: 6px 8px 4px; justify-self: end; font: 500 14px var(--serif); color: var(--ink); background: none; border: 1px solid var(--ink); border-radius: 3px; height: 30px; padding: 0 12px; cursor: pointer; }
 .cal-menu .go:hover:not(:disabled) { background: var(--ink); color: var(--sheet); }
 .cal-menu .go:disabled { opacity: 0.4; cursor: default; }
