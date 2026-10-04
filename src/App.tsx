@@ -27,8 +27,8 @@ const KEY = 'pizza-calc:v6'
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
 const sideMax = () => Math.max(SIDE_MIN, Math.round(window.innerWidth * 0.7))
-// Roughly 31% of the window (e.g. ~448px on a 1449px wide window).
-const defaultSide = () => Math.min(640, Math.max(340, Math.round(window.innerWidth * 0.31)))
+// Roughly 23.6% of the window (e.g. 448px side : 1449px main on a ~1897px wide window).
+const defaultSide = () => Math.min(640, Math.max(340, Math.round(window.innerWidth * 0.236)))
 
 function loadSide() {
   try {
