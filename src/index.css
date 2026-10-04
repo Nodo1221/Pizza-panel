@@ -64,8 +64,8 @@ b, strong { font-weight: inherit; }
 .grip { cursor: col-resize; touch-action: none; background: linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat; }
 .grip:hover, .grip:focus-visible { background: linear-gradient(var(--basil), var(--basil)) center / 3px 100% no-repeat; outline: none; }
 
-.main { min-width: 0; padding: 28px clamp(32px, 5vw, 64px) 48px; display: grid; gap: 24px; align-content: start; }
-.main > section + section { border-top: 1px solid var(--line); padding-top: 24px; }
+.main { min-width: 0; padding: 40px clamp(40px, 8vw, 120px) 64px; display: grid; gap: 32px; align-content: start; }
+.main > section + section { border-top: 1px solid var(--line); padding-top: 32px; }
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .f { display: grid; gap: 4px; font-size: 14px; color: var(--mute); }
