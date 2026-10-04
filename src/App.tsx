@@ -273,10 +273,12 @@ export default function App() {
           </div>
 
           <div className="g">
-            <F label="Oven (°C)">{num('ovenC')}</F>
-            <Grp label="Baking surface">
-              <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
-            </Grp>
+            <div className="row">
+              <F label="Oven (°C)">{num('ovenC')}</F>
+              <Grp label="Surface">
+                <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray'], ['stone', 'Stone'], ['steel', 'Steel']]} />
+              </Grp>
+            </div>
           </div>
 
           <div className="stack">
