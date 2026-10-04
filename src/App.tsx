@@ -84,9 +84,9 @@ const Tip = ({ children }: { children: ReactNode }) => (
     <div className="pop">{children}</div>
   </details>
 )
-const More = ({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) => (
-  <details className="more">
-    <summary>{title}<span>{sub}</span></summary>
+const More = ({ title, sub, className, children }: { title: string; sub?: ReactNode; className?: string; children: ReactNode }) => (
+  <details className={className ? `more ${className}` : "more"}>
+    <summary>{title}<span className="sub">{sub}</span></summary>
     <div className="body">{children}</div>
   </details>
 )
@@ -101,7 +101,6 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
-  const [adjust, setAdjust] = useState(false)
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -146,9 +145,9 @@ export default function App() {
   const num = (k: NumKey) => (
     <input
       type="number" inputMode="decimal" min={LIMITS[k].min} max={LIMITS[k].max} step={LIMITS[k].step}
-      value={s[k]} aria-invalid={bad(k, s[k])}
-      onChange={e => set(k, parseFloat(e.target.value) || 0)}
-      onBlur={() => set(k, fit(k, s[k]))}
+      value={Number.isNaN(s[k]) ? '' : s[k]} aria-invalid={bad(k, s[k])}
+      onChange={e => set(k, e.target.value === '' ? NaN : parseFloat(e.target.value))}
+      onBlur={() => set(k, fit(k, Number.isNaN(s[k]) ? LIMITS[k].min : s[k]))}
     />
   )
   const ext = (k: 'sugarPct' | 'oilPct') => {
@@ -156,9 +155,9 @@ export default function App() {
     return (
       <input
         type="number" inputMode="decimal" min={LIMITS[k].min} max={LIMITS[k].max} step={LIMITS[k].step}
-        value={v} aria-invalid={!(v >= LIMITS[k].min && v <= LIMITS[k].max)}
-        onChange={e => set(k, parseFloat(e.target.value) || 0)}
-        onBlur={() => set(k, fit(k, v))}
+        value={Number.isNaN(v) ? '' : v} aria-invalid={!(v >= LIMITS[k].min && v <= LIMITS[k].max)}
+        onChange={e => set(k, e.target.value === '' ? NaN : parseFloat(e.target.value))}
+        onBlur={() => set(k, fit(k, Number.isNaN(v) ? LIMITS[k].min : v))}
       />
     )
   }
@@ -214,16 +213,16 @@ export default function App() {
                 <input
                   type="number" min={LIMITS.w.min} max={LIMITS.w.max} step={LIMITS.w.step}
                   value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} aria-invalid={s.w !== 0 && bad('w', s.w)}
-                  onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))}
-                  onBlur={() => s.w !== 0 && set('w', fit('w', s.w))}
+                  onChange={e => setS(p => ({ ...p, flourId: 'custom', w: e.target.value === '' ? NaN : parseFloat(e.target.value) }))}
+                  onBlur={() => s.w !== 0 && set('w', fit('w', Number.isNaN(s.w) ? LIMITS.w.min : s.w))}
                 />
               </F>
               <F label="Or protein (%)">
                 <input
                   type="number" min={LIMITS.protein.min} max={LIMITS.protein.max} step={LIMITS.protein.step}
-                  value={s.protein} aria-invalid={bad('protein', s.protein)}
-                  onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0, w: 0 }))}
-                  onBlur={() => set('protein', fit('protein', s.protein))}
+                  value={Number.isNaN(s.protein) ? '' : s.protein} aria-invalid={bad('protein', s.protein)}
+                  onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: e.target.value === '' ? NaN : parseFloat(e.target.value), w: 0 }))}
+                  onBlur={() => set('protein', fit('protein', Number.isNaN(s.protein) ? LIMITS.protein.min : s.protein))}
                 />
               </F>
             </div>
@@ -238,6 +237,20 @@ export default function App() {
             <Grp label="Yeast">
               <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
             </Grp>
+            <More title="Extra browning" sub={
+              <button
+                type="button" role="switch" aria-checked={s.browning} aria-label="Enable extra browning" className="switch"
+                onClick={e => { e.preventDefault(); set('browning', !s.browning) }}
+              />
+            }>
+              <div className="row">
+                <F label="Sugar (%)">{ext('sugarPct')}</F>
+                <F label="Olive oil (%)">{ext('oilPct')}</F>
+              </div>
+              {(s.sugarPct !== null || s.oilPct !== null) && (
+                <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: null, oilPct: null }))}>Use defaults</button>
+              )}
+            </More>
           </div>
 
           <div className="g">
@@ -252,26 +265,6 @@ export default function App() {
             <Grp label="Baking surface">
               <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
             </Grp>
-            <div className="toggle">
-              <span>Extra browning</span>
-              <div className="tg">
-                {s.browning && (
-                  <button type="button" className="link" aria-expanded={adjust} onClick={() => setAdjust(v => !v)}>{adjust ? 'Hide' : 'Adjust'}</button>
-                )}
-                <button type="button" role="switch" aria-checked={s.browning} aria-label="Extra browning" className="switch" onClick={() => set('browning', !s.browning)} />
-              </div>
-            </div>
-            {s.browning && adjust && (
-              <>
-                <div className="row">
-                  <F label="Sugar (%)">{ext('sugarPct')}</F>
-                  <F label="Olive oil (%)">{ext('oilPct')}</F>
-                </div>
-                {(s.sugarPct !== null || s.oilPct !== null) && (
-                  <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: null, oilPct: null }))}>Use defaults</button>
-                )}
-              </>
-            )}
           </div>
 
           <div className="stack">
@@ -299,8 +292,8 @@ export default function App() {
         onPointerDown={drag}
         onDoubleClick={resetSide}
         onKeyDown={e => {
-          if (e.key === 'ArrowLeft') pick(Math.max(SIDE_MIN, side - 20))
-          if (e.key === 'ArrowRight') pick(Math.min(sideMax(), side + 20))
+          if (e.key === 'ArrowLeft') { e.preventDefault(); pick(Math.max(SIDE_MIN, side - 20)) }
+          if (e.key === 'ArrowRight') { e.preventDefault(); pick(Math.min(sideMax(), side + 20)) }
         }}
       />
 

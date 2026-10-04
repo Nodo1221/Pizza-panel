@@ -1,3 +1,14 @@
+@font-face {
+  font-family: "Georgia Fallback Serif";
+  src: local("Georgia");
+  size-adjust: 104%;
+}
+@font-face {
+  font-family: "Georgia Fallback Display";
+  src: local("Georgia");
+  size-adjust: 110%;
+}
+
 :root {
   --table: #ece9e1;
   --sheet: #faf8f3;
@@ -19,8 +30,8 @@
   --p-yeast: #8a5a34;
   --p-oil: #a9bd6a;
   --p-sugar: #e8c2c9;
-  --serif: "Source Serif 4 Variable", Georgia, serif;
-  --display: "Young Serif", Georgia, serif;
+  --serif: "Source Serif 4 Variable", "Georgia Fallback Serif", serif;
+  --display: "Young Serif", "Georgia Fallback Display", serif;
   color-scheme: light;
 }
 
@@ -36,13 +47,13 @@ h1 { font: 400 38px/1 var(--display); letter-spacing: -0.01em; margin: 0 0 6px; 
 h2 { font: 500 20px/1.2 var(--serif); margin: 0; }
 b, strong { font-weight: inherit; }
 
-.app { display: grid; grid-template-columns: var(--side, 380px) 8px minmax(0, 1fr); min-height: 100vh; }
+.app { display: grid; grid-template-columns: var(--side, 380px) 8px minmax(0, 1fr); min-height: 100dvh; }
 .side {
   background: var(--table);
   padding: 28px 28px 40px;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   display: grid;
   gap: 20px;
@@ -107,9 +118,10 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .tip .pop { position: absolute; z-index: 5; left: -50px; top: 26px; width: 260px; padding: 12px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: 3px; font-size: 14px; line-height: 1.45; color: var(--ink); }
 
 .more { border-top: 1px solid var(--line); }
-.more summary { display: flex; align-items: baseline; gap: 12px; padding: 13px 0; cursor: pointer; list-style: none; font: 500 16px var(--serif); }
+.more summary { display: flex; align-items: center; gap: 12px; padding: 13px 0; cursor: pointer; list-style: none; font: 500 16px var(--serif); }
 .more summary::-webkit-details-marker { display: none; }
 .more summary span { margin-left: auto; font: 400 14px var(--serif); color: var(--mute); text-align: right; }
+.more summary span.sub { display: flex; align-items: center; }
 .more summary::after { content: '+'; font: 400 18px var(--serif); color: var(--mute); }
 .more[open] summary::after { content: '\2212'; }
 .more .body { display: grid; gap: 12px; padding: 2px 0 16px; }
