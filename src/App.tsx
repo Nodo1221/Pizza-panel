@@ -21,9 +21,9 @@ type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
 const durParts = (m: number): [string, string] => (m >= 90 ? [(m / 60).toFixed(1), 'h'] : [String(Math.round(m)), 'min'])
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
+const toHHMM = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
 const fmtClock = (absMs: number, originMs: number): string => {
-  const d = new Date(absMs)
-  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const hm = toHHMM(absMs)
   const dayOrig = new Date(originMs); dayOrig.setHours(0, 0, 0, 0)
   const dayAbs = new Date(absMs); dayAbs.setHours(0, 0, 0, 0)
   const days = Math.round((dayAbs.getTime() - dayOrig.getTime()) / 86_400_000)
@@ -136,6 +136,7 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
+  const [anchorTime, setAnchorTime] = useState(() => toHHMM(Date.now()))
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -177,7 +178,7 @@ export default function App() {
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
-  const nowMs = Date.now()
+  const nowMs = (() => { const [h, m] = anchorTime.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime() })()
   const stageAnchor = r.stages[0].start
 
   const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
@@ -418,7 +419,13 @@ export default function App() {
         </section>
 
         <section>
-          <div className="hd"><h2>Schedule</h2></div>
+          <div className="hd">
+            <h2>Schedule</h2>
+            <label className="anchor-label">
+              from
+              <input type="time" aria-label="Starting time" value={anchorTime} onChange={e => setAnchorTime(e.target.value)} />
+            </label>
+          </div>
           {r.stages.map(x => {
             const [v, u] = durParts(x.min)
             const clockMs = nowMs + (x.start - stageAnchor)
