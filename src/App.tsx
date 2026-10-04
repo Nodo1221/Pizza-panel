@@ -101,6 +101,7 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
+  const [adjust, setAdjust] = useState(false)
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -253,10 +254,15 @@ export default function App() {
             </Grp>
             <div className="toggle">
               <span>Extra browning</span>
-              <button type="button" role="switch" aria-checked={s.browning} aria-label="Extra browning" className="switch" onClick={() => set('browning', !s.browning)} />
+              <div className="tg">
+                {s.browning && (
+                  <button type="button" className="link" aria-expanded={adjust} onClick={() => setAdjust(v => !v)}>{adjust ? 'Hide' : 'Adjust'}</button>
+                )}
+                <button type="button" role="switch" aria-checked={s.browning} aria-label="Extra browning" className="switch" onClick={() => set('browning', !s.browning)} />
+              </div>
             </div>
-            {s.browning && (
-              <More title="Sugar and oil" sub={`${s.sugarPct ?? def.sugarPct}% sugar, ${s.oilPct ?? def.oilPct}% oil`}>
+            {s.browning && adjust && (
+              <>
                 <div className="row">
                   <F label="Sugar (%)">{ext('sugarPct')}</F>
                   <F label="Olive oil (%)">{ext('oilPct')}</F>
@@ -264,7 +270,7 @@ export default function App() {
                 {(s.sugarPct !== null || s.oilPct !== null) && (
                   <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: null, oilPct: null }))}>Use defaults</button>
                 )}
-              </More>
+              </>
             )}
           </div>
 
