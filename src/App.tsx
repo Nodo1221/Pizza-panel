@@ -2,11 +2,10 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { STYLES, compute, estimateW, suggestHydration, type Inputs, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
+import { LIMITS, STYLES, compute, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
 type S = Omit<Inputs, 'w' | 'wEst'> & { flourId: string; protein: number; w: number }
-type NumKey = { [K in keyof S]: S[K] extends number ? K : never }[keyof S]
 
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
 
@@ -39,7 +38,11 @@ function loadSide() {
 function load(): S {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...init, ...JSON.parse(raw) }
+    if (raw) {
+      const m: S = { ...init, ...JSON.parse(raw) }
+      // w stays 0 when it was never entered; sanitize would otherwise raise it to the minimum.
+      return { ...sanitize({ ...m, w: m.w > 0 ? m.w : LIMITS.w.min }), w: m.w > 0 ? fit('w', m.w) : 0 }
+    }
   } catch {
     // storage blocked or the saved data is corrupt: start from the defaults
   }
@@ -121,15 +124,23 @@ export default function App() {
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
 
-  const num = (k: NumKey, step = 1) => (
-    <input type="number" inputMode="decimal" step={step} value={s[k]} onChange={e => set(k, parseFloat(e.target.value) || 0)} />
+  const bad = (k: LimitKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
+  const num = (k: LimitKey) => (
+    <input
+      type="number" inputMode="decimal" min={LIMITS[k].min} max={LIMITS[k].max} step={LIMITS[k].step}
+      value={s[k]} aria-invalid={bad(k, s[k])}
+      onChange={e => set(k, parseFloat(e.target.value) || 0)}
+      onBlur={() => set(k, fit(k, s[k]))}
+    />
   )
   const yName = { fresh: 'fresh', instant: 'instant dry', active: 'active dry' }[s.yeast]
   type Row = { key: string; name: string; g: number; pc: number; d: number }
   const rows: Row[] = [
     { key: 'flour', name: 'Flour', g: r.flour, pc: 100, d: 0 },
-    { key: 'water', name: 'Water', g: r.water, pc: s.hydration, d: 0 },
+    { key: 'water', name: 'Water', g: r.water, pc: r.used.hydration, d: 0 },
     { key: 'salt', name: 'Salt', g: r.salt, pc: r.pct.salt, d: 1 },
+    ...(r.pct.oil > 0 ? [{ key: 'oil', name: 'Olive oil', g: r.oilG, pc: r.pct.oil, d: 1 }] : []),
+    ...(r.pct.sugar > 0 ? [{ key: 'sugar', name: 'Sugar', g: r.sugarG, pc: r.pct.sugar, d: 1 }] : []),
     { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: r.pct.yeast, d: 2 },
   ]
 
@@ -171,15 +182,25 @@ export default function App() {
             </Grp>
             <div className="row">
               <F label="W">
-                <input type="number" step={5} value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))} />
+                <input
+                  type="number" min={LIMITS.w.min} max={LIMITS.w.max} step={LIMITS.w.step}
+                  value={s.w || ''} placeholder={`~${Math.round(estimateW(s.protein))}`} aria-invalid={s.w !== 0 && bad('w', s.w)}
+                  onChange={e => setS(p => ({ ...p, flourId: 'custom', w: parseFloat(e.target.value) || 0 }))}
+                  onBlur={() => s.w !== 0 && set('w', fit('w', s.w))}
+                />
               </F>
               <F label="Or protein (%)">
-                <input type="number" step={0.1} value={s.protein} onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0, w: 0 }))} />
+                <input
+                  type="number" min={LIMITS.protein.min} max={LIMITS.protein.max} step={LIMITS.protein.step}
+                  value={s.protein} aria-invalid={bad('protein', s.protein)}
+                  onChange={e => setS(p => ({ ...p, flourId: 'custom', protein: parseFloat(e.target.value) || 0, w: 0 }))}
+                  onBlur={() => set('protein', fit('protein', s.protein))}
+                />
               </F>
             </div>
             {s.w <= 0 && <p className="hint">W ~{Math.round(effW)} estimated from protein (±40).</p>}
             <p className="hint">Recommended: {r.range.min}–{Math.round(r.range.max)} h, planned: {planned} h</p>
-            <F label="Hydration (%)">{num('hydration', 0.5)}</F>
+            <F label="Hydration (%)">{num('hydration')}</F>
             {sug !== s.hydration && (
               <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
             )}
@@ -196,7 +217,8 @@ export default function App() {
           </div>
 
           <div className="g">
-            <F label="Oven (°C)">{num('ovenC', 5)}</F>
+            <F label="Oven (°C)">{num('ovenC')}</F>
+            <p className="hint">Adds sugar and olive oil for browning below 400 °C.</p>
             <Grp label="Baking surface">
               <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
             </Grp>
@@ -235,10 +257,10 @@ export default function App() {
       <main className="main">
         {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
 
-        <section>
+        <section className="card">
           <div className="hd">
             <h2>Recipe</h2>
-            <span>{s.pizzas} × {s.ballG} g</span>
+            <span>{r.used.pizzas} × {r.used.ballG} g</span>
           </div>
           {rows.map(x => (
             <div className="line big" key={x.key}>
@@ -255,7 +277,7 @@ export default function App() {
 
         <section>
           <div className="hd">
-            <h2>Timeline</h2>
+            <h2>Schedule</h2>
             <span>{dur(-first.start / 60000)} to first pizza</span>
           </div>
           <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
@@ -269,10 +291,6 @@ export default function App() {
             <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
             <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
           </div>
-        </section>
-
-        <section>
-          <div className="hd"><h2>Schedule</h2></div>
           {r.stages.map(x => (
             <div className="item" key={x.label}>
               <div className="line">

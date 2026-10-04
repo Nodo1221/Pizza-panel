@@ -41,6 +41,49 @@ const SURFACE_BAKE: Record<Surface, number> = { tray: 1.4, stone: 1.15, steel: 1
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x))
 
+// Accepted range for every number the user can type. Anything outside is pulled back in.
+export const LIMITS = {
+  pizzas: { min: 1, max: 20, step: 1 },
+  ballG: { min: 100, max: 500, step: 5 },
+  hydration: { min: 50, max: 80, step: 0.5 },
+  w: { min: 100, max: 450, step: 5 },
+  protein: { min: 7, max: 18, step: 0.1 },
+  roomC: { min: 5, max: 40, step: 1 },
+  fridgeC: { min: 0, max: 12, step: 1 },
+  flourC: { min: 0, max: 40, step: 1 },
+  ddtC: { min: 15, max: 35, step: 1 },
+  ovenC: { min: 150, max: 500, step: 5 },
+} as const
+export type LimitKey = keyof typeof LIMITS
+
+export function fit(k: LimitKey, v: number) {
+  const { min, max } = LIMITS[k]
+  const x = Number.isFinite(v) ? v : min
+  return clamp(k === 'pizzas' ? Math.round(x) : x, min, max)
+}
+
+const oneOf = <T extends string>(v: unknown, allowed: Record<T, unknown>, fallback: T): T =>
+  typeof v === 'string' && v in allowed ? (v as T) : fallback
+
+// Clamps every limited number and replaces unknown enum values, e.g. from stale localStorage.
+export function sanitize<T extends object>(i: T): T {
+  const o = { ...i } as Record<string, unknown>
+  for (const k of Object.keys(LIMITS) as LimitKey[]) if (k in o) o[k] = fit(k, Number(o[k]))
+  if ('style' in o) o.style = oneOf(o.style, STYLES, 'overnight')
+  if ('yeast' in o) o.yeast = oneOf(o.yeast, YEAST_X, 'fresh')
+  if ('surface' in o) o.surface = oneOf(o.surface, SURFACE_BAKE, 'tray')
+  if ('mixing' in o) o.mixing = oneOf(o.mixing, FRICTION, 'hand')
+  return o as T
+}
+
+// Sugar and olive oil help colour and the rim in a home oven. They taper off as the oven gets hotter:
+// full amounts (2% oil, 1% sugar) up to 300 C, half at 350 C, none from 400 C. AVPN allows neither,
+// but it also expects an oven above 430 C.
+export function enrichment(ovenC: number) {
+  const f = clamp((400 - ovenC) / 100, 0, 1)
+  return { oil: Math.round(2 * f * 2) / 2, sugar: Math.round(1 * f * 2) / 2 }
+}
+
 // Yeast activity relative to 20 C, doubling about every 4.7 C (dough at 3 C ferments roughly 11 times
 // slower than at 20 C). Capped at 35 C.
 const activity = (c: number) => Math.exp(0.147 * (Math.min(c, 35) - 20))
@@ -101,8 +144,9 @@ export function bakeTime(ovenC: number, surface: Surface) {
   return m * SURFACE_BAKE[surface]
 }
 
-export function compute(i: Inputs) {
-  const w = clamp(i.w, 100, 450)
+export function compute(raw: Inputs) {
+  const i = sanitize(raw)
+  const w = i.w
 
   // The times are worked out here, not entered: the style sets the aim, the flour's W limits it.
   const { min, max } = fermentRange(w)
@@ -114,16 +158,18 @@ export function compute(i: Inputs) {
   const coldH = chilled ? Math.max(0, total - bulkH - proofH) : 0
   const autolysisMin = w < 200 ? 20 : w < 320 ? 30 : 45
 
-  // Four ingredients only, as in the AVPN spec. Salt is its 50-55 g per litre of water (5% to 5.5% of
-  // the water, more for strong flour); yeast follows from the schedule and your kitchen temperatures.
+  // Salt is AVPN's 50-55 g per litre of water (5% to 5.5% of the water, more for strong flour); yeast
+  // follows from the schedule and your kitchen temperatures; oil and sugar depend on the oven.
   const saltPct = i.hydration * (0.05 + 0.005 * clamp((w - 280) / 30, 0, 1))
   const freshPct = freshYeastPct([[bulkH, i.roomC], [coldH, i.fridgeC], [proofH, i.roomC]])
   const yPct = freshPct * YEAST_X[i.yeast]
+  const { oil: oilPct, sugar: sugarPct } = enrichment(i.ovenC)
 
-  const dough = Math.max(0, i.pizzas) * Math.max(0, i.ballG)
-  const flour = dough / (1 + (i.hydration + saltPct + yPct) / 100)
+  const dough = i.pizzas * i.ballG
+  const flour = dough / (1 + (i.hydration + saltPct + oilPct + sugarPct + yPct) / 100)
   const amt = (p: number) => (flour * p) / 100
   const yeastG = amt(yPct)
+  const extras = [sugarPct > 0 && 'sugar', oilPct > 0 && 'oil'].filter(Boolean)
   const dilute = yeastG > 0 && yeastG < 1 ? { solution: yeastG * 100, waterIn: yeastG * 99 } : null
 
   const waterTemp = 3 * i.ddtC - i.flourC - i.roomC - FRICTION[i.mixing]
@@ -135,7 +181,7 @@ export function compute(i: Inputs) {
       label: 'Bake',
       kind: 'oven',
       start: 0,
-      min: Math.max(0, i.pizzas) * (bakeMin + 2),
+      min: i.pizzas * (bakeMin + 2),
       note: `${bakeMin.toFixed(1)} min per pizza at ${i.ovenC} °C, plus 2 min between pizzas`,
     },
   ]
@@ -151,7 +197,7 @@ export function compute(i: Inputs) {
   before('Balls in the fridge', 'cold', coldH * 60, `${i.fridgeC} °C, sealed`)
   before('Divide and ball', 'prep', 15, 'Tight balls, 1 cm apart in a lidded tray')
   before('Bulk rise', 'room', bulkH * 60, `${i.roomC} °C, covered`)
-  before('Mix and knead', 'prep', 12, `Add salt and yeast. Aim for a ${i.ddtC} °C dough`)
+  before('Mix and knead', 'prep', 12, `Add salt, yeast${extras.length ? `, ${extras.join(' and ')}` : ''}. Aim for a ${i.ddtC} °C dough`)
   before('Autolysis', 'room', autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
   if (i.surface !== 'tray')
     stages.push({
@@ -175,13 +221,16 @@ export function compute(i: Inputs) {
     flour,
     water: amt(i.hydration),
     salt: amt(saltPct),
+    oilG: amt(oilPct),
+    sugarG: amt(sugarPct),
     yeastG,
     dilute,
     waterTemp,
     bakeMin,
     stages,
     range: { min, max },
-    pct: { salt: saltPct, yeast: yPct },
+    pct: { salt: saltPct, yeast: yPct, oil: oilPct, sugar: sugarPct },
+    used: { pizzas: i.pizzas, ballG: i.ballG, hydration: i.hydration },
     plan: { autolysisMin, bulkH, coldH, proofH, total },
     alerts,
   }
