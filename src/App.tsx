@@ -298,8 +298,6 @@ export default function App() {
       />
 
       <main className="main">
-        {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
-
         <section>
           <div className="hd">
             <h2>Timeline</h2>
@@ -316,6 +314,11 @@ export default function App() {
             <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
             <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
           </div>
+          {r.alerts.length > 0 && (
+            <div className="g" style={{ marginTop: '20px' }}>
+              {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
+            </div>
+          )}
         </section>
 
         <section>
