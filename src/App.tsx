@@ -21,7 +21,8 @@ const init: S = {
   browning: false, oilPct: null, sugarPct: null,
 }
 
-const KEY = 'pizza-calc:v5'
+// v6: sugar and oil are null (use the default for the oven) instead of a saved number.
+const KEY = 'pizza-calc:v6'
 
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
@@ -231,7 +232,7 @@ export default function App() {
               {num('hydration')}
             </Grp>
             {sug !== s.hydration && (
-              <p className="sug">Suggested: {sug}% <button type="button" onClick={() => set('hydration', sug)}>Use {sug}%</button></p>
+              <p className="sug">Suggested: {sug}% <button type="button" onClick={() => set('hydration', sug)}>Use it</button></p>
             )}
             <Grp label="Yeast">
               <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
