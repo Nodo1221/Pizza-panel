@@ -172,10 +172,11 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .big em { display: inline-block; min-width: 2.3em; text-align: left; font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 .stime { font-size: 15px; color: var(--ink); width: 80px; flex-shrink: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
-.anchor-label { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 15px; color: var(--mute); cursor: default; }
-.anchor-label input[type='time'] { font: 400 15px var(--serif); color: var(--ink); background: none; border: none; border-bottom: 1px solid var(--line); border-radius: 0; height: auto; width: auto; padding: 1px 4px; cursor: pointer; }
+.anchor-label { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 15px; color: var(--mute); }
+.anchor-label input[type='time'] { -webkit-appearance: none; appearance: none; font: 400 15px var(--serif); color: var(--ink); background: none; border: none; border-bottom: 1px solid var(--line); border-radius: 0; height: auto; width: auto; padding: 0 2px 2px; cursor: pointer; }
 .anchor-label input[type='time']:hover { border-bottom-color: var(--ink); }
 .anchor-label input[type='time']:focus { border-bottom-color: var(--basil); outline: none; }
+.anchor-label input[type='time']::-webkit-calendar-picker-indicator { opacity: 0; width: 0; padding: 0; margin: 0; }
 
 
 @media (max-width: 860px) {
