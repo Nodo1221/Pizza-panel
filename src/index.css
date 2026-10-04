@@ -64,7 +64,7 @@ b, strong { font-weight: inherit; }
 .grip { cursor: col-resize; touch-action: none; background: linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat; }
 .grip:hover, .grip:focus-visible { background: linear-gradient(var(--basil), var(--basil)) center / 3px 100% no-repeat; outline: none; }
 
-.main { min-width: 0; padding: 40px clamp(40px, 8vw, 120px) 64px; display: grid; gap: 32px; align-content: start; }
+.main { min-width: 0; padding: 48px clamp(64px, 10vw, 200px) 80px; display: grid; gap: 32px; align-content: start; }
 .main > section + section { border-top: 1px solid var(--line); padding-top: 32px; }
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -171,6 +171,7 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .big strong { font-size: 26px; font-weight: 500; line-height: 1; min-width: 88px; text-align: right; }
 .big em { display: inline-block; min-width: 2.3em; text-align: left; font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
+.stime { font-size: 15px; color: var(--ink); min-width: 56px; padding-right: 8px; flex-shrink: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
 
 
 @media (max-width: 860px) {

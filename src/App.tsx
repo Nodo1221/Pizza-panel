@@ -21,6 +21,14 @@ type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
 const durParts = (m: number): [string, string] => (m >= 90 ? [(m / 60).toFixed(1), 'h'] : [String(Math.round(m)), 'min'])
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
+const fmtClock = (absMs: number, originMs: number): string => {
+  const d = new Date(absMs)
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const dayOrig = new Date(originMs); dayOrig.setHours(0, 0, 0, 0)
+  const dayAbs = new Date(absMs); dayAbs.setHours(0, 0, 0, 0)
+  const days = Math.round((dayAbs.getTime() - dayOrig.getTime()) / 86_400_000)
+  return days > 0 ? `+${days}\u2002${hm}` : hm
+}
 
 const init: S = {
   pizzas: 4, ballG: 250, hydration: suggestHydration(260, 'tray', 275),
@@ -169,6 +177,8 @@ export default function App() {
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
+  const nowMs = Date.now()
+  const stageAnchor = r.stages[0].start
 
   const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
   const num = (k: NumKey) => (
@@ -411,8 +421,10 @@ export default function App() {
           <div className="hd"><h2>Schedule</h2></div>
           {r.stages.map(x => {
             const [v, u] = durParts(x.min)
+            const clockMs = nowMs + (x.start - stageAnchor)
             return (
               <div className="line big" key={x.label}>
+                <time className="stime">{fmtClock(clockMs, nowMs)}</time>
                 <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
                 <span className="dots" />
                 <small>{x.note}</small>
