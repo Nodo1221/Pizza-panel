@@ -19,7 +19,6 @@
   --p-yeast: #8a5a34;
   --p-oil: #a9bd6a;
   --p-sugar: #e8c2c9;
-  --card: #fffdf9;
   --serif: "Source Serif 4 Variable", Georgia, serif;
   --display: "Young Serif", Georgia, serif;
   color-scheme: light;
@@ -55,8 +54,7 @@ b, strong { font-weight: inherit; }
 .grip:hover, .grip:focus-visible { background: linear-gradient(var(--basil), var(--basil)) center / 3px 100% no-repeat; outline: none; }
 
 .main { min-width: 0; padding: 32px clamp(20px, 4vw, 56px) 56px; display: grid; gap: 28px; align-content: start; }
-.main > section { padding-inline: 32px; }
-.main > .card { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 28px 32px; }
+.main > section + section { border-top: 1px solid var(--line); padding-top: 28px; }
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .f { display: grid; gap: 5px; font-size: 14px; color: var(--mute); }
@@ -90,6 +88,9 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .seg button[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
 
 .hint { margin: 0; font-size: 14px; color: var(--mute); }
+.sug { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--ink); }
+.sug button { font: 500 14px var(--serif); color: var(--ink); background: var(--field); border: 1px solid var(--ink); border-radius: 3px; height: 30px; padding: 0 12px; cursor: pointer; }
+.sug button:hover { background: var(--ink); color: var(--sheet); }
 .link { font: inherit; color: var(--basil); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .side > .link { justify-self: start; font-size: 14px; }
 

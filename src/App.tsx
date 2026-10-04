@@ -202,10 +202,12 @@ export default function App() {
               </F>
             </div>
             {s.w <= 0 && <p className="hint">W ~{Math.round(effW)} estimated from protein (±40).</p>}
-            <p className="hint">Recommended: {r.range.min}–{Math.round(r.range.max)} h, planned: {planned} h</p>
-            <F label="Hydration (%)">{num('hydration')}</F>
+            <p className="hint">Fermentation: {planned} h. Recommended: {r.range.min}–{Math.round(r.range.max)} h.</p>
+            <Grp label={<>Hydration (%)<Tip>Suggested from the flour's W: stronger flour takes more water. Minus 3 points for a tray or rack, minus 2 for an oven below 250 °C.</Tip></>}>
+              {num('hydration')}
+            </Grp>
             {sug !== s.hydration && (
-              <p className="hint">Suggested: {sug}%. <button type="button" className="link" onClick={() => set('hydration', sug)}>Use it</button></p>
+              <p className="sug">Suggested: {sug}% <button type="button" onClick={() => set('hydration', sug)}>Use {sug}%</button></p>
             )}
             <Grp label="Yeast">
               <Seg<YeastType> value={s.yeast} onPick={v => set('yeast', v)} options={[['fresh', 'Fresh'], ['instant', 'Instant'], ['active', 'Active dry']]} />
@@ -269,24 +271,6 @@ export default function App() {
       <main className="main">
         {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
 
-        <section className="card">
-          <div className="hd">
-            <h2>Recipe</h2>
-            <span>{r.used.pizzas} × {r.used.ballG} g</span>
-          </div>
-          {rows.map(x => (
-            <div className="line big" key={x.key}>
-              <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
-              <span className="dots" />
-              <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
-              <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
-            </div>
-          ))}
-          {r.dilute && (
-            <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
-          )}
-        </section>
-
         <section>
           <div className="hd">
             <h2>Schedule</h2>
@@ -313,6 +297,24 @@ export default function App() {
               <p>{x.note}</p>
             </div>
           ))}
+        </section>
+
+        <section>
+          <div className="hd">
+            <h2>Recipe</h2>
+            <span>{r.used.pizzas} × {r.used.ballG} g</span>
+          </div>
+          {rows.map(x => (
+            <div className="line big" key={x.key}>
+              <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
+              <span className="dots" />
+              <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
+              <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
+            </div>
+          ))}
+          {r.dilute && (
+            <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
+          )}
         </section>
       </main>
     </div>
