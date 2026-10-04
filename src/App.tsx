@@ -5,7 +5,17 @@ import { FLOURS } from './core/flours'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
-type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null }
+// diamCm is 0 when the user has not entered a diameter; ballG is then used directly.
+type ThickOption = 'light' | 'classic' | 'thick'
+const THICK_LABELS: [ThickOption, string][] = [['light', 'Thin'], ['classic', 'Classic'], ['thick', 'Thick']]
+// Thickness factor: grams of dough per cm² of pizza area (based on Lehmann/community conventions).
+const THICK_TF: Record<ThickOption, number> = { light: 0.35, classic: 0.47, thick: 0.65 }
+const ballGFromDiam = (diam: number, thick: ThickOption) =>
+  Math.round(THICK_TF[thick] * Math.PI * (diam / 2) ** 2)
+const diamFromBallG = (g: number, thick: ThickOption) =>
+  Math.round(2 * Math.sqrt(g / (THICK_TF[thick] * Math.PI)))
+
+type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null; diamCm: number; thick: ThickOption }
 
 type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
@@ -19,10 +29,11 @@ const init: S = {
   style: 'overnight',
   ovenC: 275, surface: 'tray',
   browning: false, oilPct: null, sugarPct: null,
+  diamCm: 0, thick: 'classic',
 }
 
-// v6: sugar and oil are null (use the default for the oven) instead of a saved number.
-const KEY = 'pizza-calc:v6'
+// v7: added diamCm (pizza diameter) and thick (thickness factor) as alternative to ball weight.
+const KEY = 'pizza-calc:v7'
 
 const SIDE_KEY = 'pizza-calc:side:v2'
 const SIDE_MIN = 300
@@ -45,15 +56,19 @@ function load(): S {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const m: S = { ...init, ...JSON.parse(raw) }
-      const { oilPct, sugarPct, ...rest } = m
+      const { oilPct, sugarPct, diamCm, thick, ...rest } = m
       // w stays 0 when it was never entered, and null means "use the default amount"; sanitize would
       // turn both into numbers, so they are put back afterwards.
+      // diamCm stays 0 when not entered; thick is an enum validated separately.
+      const validThick = (v: unknown): ThickOption => (v === 'light' || v === 'classic' || v === 'thick') ? v : 'classic'
       return {
         ...sanitize({ ...rest, w: m.w > 0 ? m.w : LIMITS.w.min }),
         w: m.w > 0 ? fit('w', m.w) : 0,
         browning: m.browning === true,
         oilPct: typeof oilPct === 'number' ? fit('oilPct', oilPct) : null,
         sugarPct: typeof sugarPct === 'number' ? fit('sugarPct', sugarPct) : null,
+        diamCm: typeof diamCm === 'number' && diamCm > 0 ? Math.round(Math.max(20, Math.min(50, diamCm))) : 0,
+        thick: validThick(thick),
       }
     }
   } catch {
@@ -143,11 +158,13 @@ export default function App() {
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
 
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
+  // When the user entered a diameter, derive ball weight from it; otherwise use ballG directly.
+  const effBallG = s.diamCm > 0 ? ballGFromDiam(s.diamCm, s.thick) : s.ballG
   const def = enrichment(s.ovenC)
   const r = useMemo(() => {
     const add = s.browning ? { oilPct: s.oilPct ?? def.oilPct, sugarPct: s.sugarPct ?? def.sugarPct } : { oilPct: 0, sugarPct: 0 }
-    return compute({ ...s, ...add, w: effW, wEst: !(s.w > 0) })
-  }, [s, effW, def.oilPct, def.sugarPct])
+    return compute({ ...s, ballG: effBallG, ...add, w: effW, wEst: !(s.w > 0) })
+  }, [s, effW, effBallG, def.oilPct, def.sugarPct])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
@@ -192,8 +209,36 @@ export default function App() {
           <div className="g">
             <div className="row">
               <F label="Pizzas">{num('pizzas')}</F>
-              <F label="Ball weight (g)">{num('ballG')}</F>
+              <F label="Ball weight (g)">
+                <input
+                  type="number" inputMode="decimal" min={LIMITS.ballG.min} max={LIMITS.ballG.max} step={LIMITS.ballG.step}
+                  value={s.diamCm > 0 ? '' : (Number.isNaN(s.ballG) ? '' : s.ballG)}
+                  placeholder={s.diamCm > 0 ? String(effBallG) : undefined}
+                  aria-invalid={s.diamCm <= 0 && bad('ballG', s.ballG)}
+                  onChange={e => setS(p => ({ ...p, diamCm: 0, ballG: e.target.value === '' ? NaN : parseFloat(e.target.value) }))}
+                  onBlur={() => { if (s.diamCm <= 0) set('ballG', fit('ballG', Number.isNaN(s.ballG) ? LIMITS.ballG.min : s.ballG)) }}
+                />
+              </F>
             </div>
+            <div className="row">
+              <F label="Or diameter (cm)">
+                <input
+                  type="number" inputMode="decimal" min={20} max={50} step={1}
+                  value={s.diamCm > 0 ? s.diamCm : ''}
+                  placeholder={s.diamCm <= 0 ? String(diamFromBallG(s.ballG, s.thick)) : undefined}
+                  aria-invalid={s.diamCm > 0 && (s.diamCm < 20 || s.diamCm > 50)}
+                  onChange={e => setS(p => ({ ...p, diamCm: e.target.value === '' ? 0 : Math.round(parseFloat(e.target.value)) }))}
+                  onBlur={() => {
+                    if (s.diamCm > 0) set('diamCm', Math.round(Math.max(20, Math.min(50, s.diamCm))))
+                    else set('diamCm', 0)
+                  }}
+                />
+              </F>
+              <Grp label="Thickness">
+                <Seg<ThickOption> value={s.thick} options={THICK_LABELS} onPick={v => set('thick', v)} />
+              </Grp>
+            </div>
+            {s.diamCm > 0 && <p className="hint">{effBallG} g per ball from ⌀{s.diamCm} cm ({s.thick}).</p>}
           </div>
 
           <div className="g">
