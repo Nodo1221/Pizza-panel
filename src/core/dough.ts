@@ -80,13 +80,13 @@ export function sanitize<T extends object>(i: T): T {
   return o as T
 }
 
-// Suggested sugar and oil for browning, never applied on its own (the defaults are 0, as in AVPN).
+// Sugar and oil added by the "extra browning" switch, which is off by default (AVPN has neither).
 // Sugar at 1-3% and oil at 2-3% are the usual ranges for home-oven pizza. The taper with oven
 // temperature is a rule of thumb, not a measured curve: full suggestion up to 300 C, half at 350 C,
 // none from 400 C, where the crust browns by itself.
 export function enrichment(ovenC: number) {
   const f = clamp((400 - ovenC) / 100, 0, 1)
-  return { oil: Math.round(2 * f * 2) / 2, sugar: Math.round(1 * f * 2) / 2 }
+  return { oilPct: Math.round(2 * f * 2) / 2, sugarPct: Math.round(1 * f * 2) / 2 }
 }
 
 // Yeast activity relative to 20 C, doubling about every 4.7 C (dough at 3 C ferments roughly 11 times

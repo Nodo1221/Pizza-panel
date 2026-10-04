@@ -5,7 +5,9 @@ import { FLOURS } from './core/flours'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
-type S = Omit<Inputs, 'w' | 'wEst'> & { flourId: string; protein: number; w: number }
+type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null }
+
+type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
 
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
 
@@ -15,7 +17,7 @@ const init: S = {
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   style: 'overnight',
   ovenC: 275, surface: 'tray',
-  oilPct: 0, sugarPct: 0,
+  browning: false, oilPct: null, sugarPct: null,
 }
 
 const KEY = 'pizza-calc:v5'
@@ -41,8 +43,16 @@ function load(): S {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const m: S = { ...init, ...JSON.parse(raw) }
-      // w stays 0 when it was never entered; sanitize would otherwise raise it to the minimum.
-      return { ...sanitize({ ...m, w: m.w > 0 ? m.w : LIMITS.w.min }), w: m.w > 0 ? fit('w', m.w) : 0 }
+      const { oilPct, sugarPct, ...rest } = m
+      // w stays 0 when it was never entered, and null means "use the default amount"; sanitize would
+      // turn both into numbers, so they are put back afterwards.
+      return {
+        ...sanitize({ ...rest, w: m.w > 0 ? m.w : LIMITS.w.min }),
+        w: m.w > 0 ? fit('w', m.w) : 0,
+        browning: m.browning === true,
+        oilPct: typeof oilPct === 'number' ? fit('oilPct', oilPct) : null,
+        sugarPct: typeof sugarPct === 'number' ? fit('sugarPct', sugarPct) : null,
+      }
     }
   } catch {
     // storage blocked or the saved data is corrupt: start from the defaults
@@ -119,16 +129,18 @@ export default function App() {
   const set = <K extends keyof S>(k: K, v: S[K]) => setS(p => ({ ...p, [k]: v }))
 
   const effW = s.w > 0 ? s.w : estimateW(s.protein)
-  const r = useMemo(() => compute({ ...s, w: effW, wEst: !(s.w > 0) }), [s, effW])
+  const def = enrichment(s.ovenC)
+  const r = useMemo(() => {
+    const add = s.browning ? { oilPct: s.oilPct ?? def.oilPct, sugarPct: s.sugarPct ?? def.sugarPct } : { oilPct: 0, sugarPct: 0 }
+    return compute({ ...s, ...add, w: effW, wEst: !(s.w > 0) })
+  }, [s, effW, def.oilPct, def.sugarPct])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
-  const brown = enrichment(s.ovenC)
-  const browning = [s.sugarPct > 0 && `${s.sugarPct}% sugar`, s.oilPct > 0 && `${s.oilPct}% oil`].filter(Boolean).join(', ') || 'off'
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
 
-  const bad = (k: LimitKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
-  const num = (k: LimitKey) => (
+  const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
+  const num = (k: NumKey) => (
     <input
       type="number" inputMode="decimal" min={LIMITS[k].min} max={LIMITS[k].max} step={LIMITS[k].step}
       value={s[k]} aria-invalid={bad(k, s[k])}
@@ -136,6 +148,17 @@ export default function App() {
       onBlur={() => set(k, fit(k, s[k]))}
     />
   )
+  const ext = (k: 'sugarPct' | 'oilPct') => {
+    const v = s[k] ?? def[k]
+    return (
+      <input
+        type="number" inputMode="decimal" min={LIMITS[k].min} max={LIMITS[k].max} step={LIMITS[k].step}
+        value={v} aria-invalid={!(v >= LIMITS[k].min && v <= LIMITS[k].max)}
+        onChange={e => set(k, parseFloat(e.target.value) || 0)}
+        onBlur={() => set(k, fit(k, v))}
+      />
+    )
+  }
   const yName = { fresh: 'fresh', instant: 'instant dry', active: 'active dry' }[s.yeast]
   type Row = { key: string; name: string; g: number; pc: number; d: number }
   const rows: Row[] = [
@@ -226,19 +249,24 @@ export default function App() {
             <Grp label="Baking surface">
               <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
             </Grp>
+            <div className="toggle">
+              <span>Extra browning</span>
+              <button type="button" role="switch" aria-checked={s.browning} aria-label="Extra browning" className="switch" onClick={() => set('browning', !s.browning)} />
+            </div>
+            {s.browning && (
+              <More title="Sugar and oil" sub={`${s.sugarPct ?? def.sugarPct}% sugar, ${s.oilPct ?? def.oilPct}% oil`}>
+                <div className="row">
+                  <F label="Sugar (%)">{ext('sugarPct')}</F>
+                  <F label="Olive oil (%)">{ext('oilPct')}</F>
+                </div>
+                {(s.sugarPct !== null || s.oilPct !== null) && (
+                  <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: null, oilPct: null }))}>Use defaults</button>
+                )}
+              </More>
+            )}
           </div>
 
           <div className="stack">
-            <More title="Browning" sub={browning}>
-              <div className="row">
-                <F label="Sugar (%)">{num('sugarPct')}</F>
-                <F label="Olive oil (%)">{num('oilPct')}</F>
-              </div>
-              <p className="hint">Off by default, as in traditional Neapolitan dough. Sugar helps the crust brown in a cooler oven, usually 1–3%. Oil softens the crumb, usually 2–3%. Above about 350 °C the crust browns by itself.</p>
-              {(brown.sugar !== s.sugarPct || brown.oil !== s.oilPct) && (
-                <p className="hint">Suggested for {s.ovenC} °C: {brown.sugar}% sugar, {brown.oil}% oil. <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: brown.sugar, oilPct: brown.oil }))}>Use it</button></p>
-              )}
-            </More>
             <More title="Water temperature" sub={`${r.waterTemp.toFixed(0)} °C`}>
               <div className="row">
                 <F label="Flour (°C)">{num('flourC')}</F>
@@ -273,7 +301,7 @@ export default function App() {
 
         <section>
           <div className="hd">
-            <h2>Schedule</h2>
+            <h2>Timeline</h2>
             <span>{dur(-first.start / 60000)} to first pizza</span>
           </div>
           <div className="band" role="img" aria-label="Timeline of all stages, coloured by temperature">
@@ -287,16 +315,6 @@ export default function App() {
             <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
             <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
           </div>
-          {r.stages.map(x => (
-            <div className="item" key={x.label}>
-              <div className="line">
-                <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
-                <span className="dots" />
-                <span>{dur(x.min)}</span>
-              </div>
-              <p>{x.note}</p>
-            </div>
-          ))}
         </section>
 
         <section>
@@ -315,6 +333,20 @@ export default function App() {
           {r.dilute && (
             <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
           )}
+        </section>
+
+        <section>
+          <div className="hd"><h2>Schedule</h2></div>
+          {r.stages.map(x => (
+            <div className="item" key={x.label}>
+              <div className="line">
+                <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
+                <span className="dots" />
+                <span>{dur(x.min)}</span>
+              </div>
+              <p>{x.note}</p>
+            </div>
+          ))}
         </section>
       </main>
     </div>

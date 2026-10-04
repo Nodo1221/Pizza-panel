@@ -88,6 +88,11 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .seg button[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
 
 .hint { margin: 0; font-size: 14px; color: var(--mute); }
+.toggle { display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: var(--mute); }
+.switch { position: relative; width: 44px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--field); cursor: pointer; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--dot); transition: transform 0.15s; }
+.switch[aria-checked='true'] { background: var(--ink); border-color: var(--ink); }
+.switch[aria-checked='true']::after { transform: translateX(20px); background: var(--sheet); }
 .sug { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--ink); }
 .sug button { font: 500 14px var(--serif); color: var(--ink); background: var(--field); border: 1px solid var(--ink); border-radius: 3px; height: 30px; padding: 0 12px; cursor: pointer; }
 .sug button:hover { background: var(--ink); color: var(--sheet); }
@@ -114,7 +119,6 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .hd span { color: var(--mute); font-size: 15px; }
 .band { display: flex; gap: 3px; height: 40px; }
 .band > span { border-radius: 2px; min-width: 6px; }
-.key + .item { margin-top: 14px; }
 .key { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 10px; font-size: 14px; color: var(--mute); }
 .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
 
