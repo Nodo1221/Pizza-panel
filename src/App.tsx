@@ -341,10 +341,10 @@ export default function App() {
             <div className="item" key={x.label}>
               <div className="line">
                 <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
+                <em>{x.note}</em>
                 <span className="dots" />
                 <span>{dur(x.min)}</span>
               </div>
-              <p>{x.note}</p>
             </div>
           ))}
         </section>

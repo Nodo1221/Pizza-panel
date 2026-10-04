@@ -131,9 +131,10 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .big em { font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 
-.item { padding: 9px 0; }
+.item { padding: 5px 0; }
 .item .line { font-size: 16px; }
-.item p { margin: 1px 0 0 19px; font-size: 14px; font-style: italic; color: var(--mute); }
+.item b { white-space: nowrap; }
+.item em { font-size: 14px; color: var(--mute); }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }

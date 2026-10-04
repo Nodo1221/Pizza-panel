@@ -183,11 +183,11 @@ export function compute(raw: Inputs) {
   const M = 60000
   const stages: Stage[] = [
     {
-      label: 'Bake',
+      label: 'Cottura',
       kind: 'oven',
       start: 0,
       min: i.pizzas * (bakeMin + 2),
-      note: `${bakeMin.toFixed(1)} min per pizza at ${i.ovenC} °C, plus 2 min between pizzas`,
+      note: `${bakeMin.toFixed(1)} min per pizza at ${i.ovenC} °C, 2 min between`,
     },
   ]
   let t = 0
@@ -197,20 +197,20 @@ export function compute(raw: Inputs) {
     stages.unshift({ label, kind, start: t, min: mins, note })
   }
   const wt = waterTemp.toFixed(0)
-  before('Shape and top', 'prep', 20, 'Take the balls out only once the oven is at temperature')
-  before('Balls at room temperature', 'room', proofH * 60, `${i.roomC} °C, covered`)
-  before('Balls in the fridge', 'cold', coldH * 60, `${i.fridgeC} °C, sealed`)
-  before('Divide and ball', 'prep', 15, 'Tight balls, 1 cm apart in a lidded tray')
-  before('Bulk rise', 'room', bulkH * 60, `${i.roomC} °C, covered`)
-  before('Mix and knead', 'prep', 12, `Add salt, yeast${extras.length ? `, ${extras.join(' and ')}` : ''}. Aim for a ${i.ddtC} °C dough`)
-  before('Autolysis', 'room', autolysisMin, `Flour and water at ${wt} °C only, no salt or yeast yet`)
+  before('Stesura e farcitura', 'prep', 20, 'shape and top')
+  before('Appretto', 'room', proofH * 60, `balls, ${i.roomC} °C`)
+  before('Maturazione', 'cold', coldH * 60, `balls in the fridge, ${i.fridgeC} °C`)
+  before('Staglio', 'prep', 15, 'divide and ball')
+  before('Puntata', 'room', bulkH * 60, `bulk rise, ${i.roomC} °C`)
+  before('Impasto', 'prep', 12, `add salt, yeast${extras.length ? `, ${extras.join(' and ')}` : ''}, aim for ${i.ddtC} °C`)
+  before('Autolisi', 'room', autolysisMin, `flour and water at ${wt} °C`)
   if (i.surface !== 'tray')
     stages.push({
-      label: 'Oven preheat',
+      label: 'Preriscaldamento',
       kind: 'oven',
       start: -60 * M,
       min: 60,
-      note: 'Highest setting with the stone or steel inside',
+      note: 'oven on high with the stone or steel',
       overlap: true,
     })
   stages.sort((a, b) => a.start - b.start)
