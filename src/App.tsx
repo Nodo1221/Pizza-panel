@@ -2,7 +2,7 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { googleCalendarUrl } from './core/calendar'
+import { googleCalendarUrl, icsFile } from './core/calendar'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
@@ -140,6 +140,7 @@ export default function App() {
   }, [s])
   const [side, setSide] = useState(loadSide)
   const [anchorTime, setAnchorTime] = useState(() => toHHMM(Date.now()))
+  const [calOff, setCalOff] = useState<string[]>([])
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -183,6 +184,21 @@ export default function App() {
   const first = r.stages[0]
   const nowMs = (() => { const [h, m] = anchorTime.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime() })()
   const stageAnchor = r.stages[0].start
+  const calStages = r.stages.filter(x => x.min >= 90).map(x => ({ ...x, startMs: nowMs + (x.start - stageAnchor) }))
+  const calPicked = calStages.filter(x => !calOff.includes(x.label))
+  const addToCalendar = () => {
+    const events = calPicked.map(x => ({ title: `${x.label} (pizza dough)`, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note }))
+    if (events.length === 1) {
+      window.open(googleCalendarUrl({ ...events[0], tz: TZ }), '_blank', 'noopener')
+      return
+    }
+    const url = URL.createObjectURL(new Blob([icsFile(events)], { type: 'text/calendar' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'pizza-dough.ics'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
   const num = (k: NumKey) => (
@@ -429,24 +445,24 @@ export default function App() {
               <input type="time" aria-label="Starting time" value={anchorTime} onChange={e => setAnchorTime(e.target.value)} />
             </label>
             <details className="tip cal-menu">
-              <summary aria-label="Add stages to Google Calendar" title="Add to Google Calendar">
+              <summary aria-label="Add stages to calendar" title="Add to calendar">
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
                   <rect x="2" y="3" width="12" height="11" rx="1.5" /><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" />
                 </svg>
               </summary>
               <div className="pop">
-                <p className="hint">Add to Google Calendar</p>
-                {r.stages.filter(x => x.min >= 90).map(x => {
-                  const startMs = nowMs + (x.start - stageAnchor)
-                  return (
-                    <a
-                      key={x.label} target="_blank" rel="noreferrer"
-                      href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs, endMs: startMs + x.min * 60000, details: x.note, tz: TZ })}
-                    >
-                      <span>{x.label}</span><small>{dur(x.min)}, from {fmtClock(startMs, nowMs)}</small>
-                    </a>
-                  )
-                })}
+                {calStages.map(x => (
+                  <label className="pick" key={x.label}>
+                    <input
+                      type="checkbox" checked={!calOff.includes(x.label)}
+                      onChange={e => setCalOff(o => (e.target.checked ? o.filter(l => l !== x.label) : [...o, x.label]))}
+                    />
+                    <span>{x.label}</span><small>{dur(x.min)}, from {fmtClock(x.startMs, nowMs)}</small>
+                  </label>
+                ))}
+                <button type="button" className="go" disabled={calPicked.length === 0} onClick={addToCalendar}>
+                  {calPicked.length > 1 ? `Download calendar file (${calPicked.length})` : 'Open in Google Calendar'}
+                </button>
               </div>
             </details>
           </div>
