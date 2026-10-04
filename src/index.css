@@ -64,7 +64,7 @@ b, strong { font-weight: inherit; }
 .grip { cursor: col-resize; touch-action: none; background: linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat; }
 .grip:hover, .grip:focus-visible { background: linear-gradient(var(--basil), var(--basil)) center / 3px 100% no-repeat; outline: none; }
 
-.main { min-width: 0; padding: 48px clamp(64px, 10vw, 200px) 80px; display: grid; gap: 32px; align-content: start; }
+.main { min-width: 0; padding: 48px clamp(64px, 12vw, 240px) 80px; display: grid; gap: 32px; align-content: start; }
 .main > section + section { border-top: 1px solid var(--line); padding-top: 32px; }
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -167,16 +167,21 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .dots { flex: 1; border-bottom: 1px dotted var(--dot); margin-bottom: 0.45em; min-width: 16px; }
 .big { padding: 8px 0; }
 .big b { font-size: 17px; white-space: nowrap; }
-.big small { font-size: 14px; color: var(--mute); margin-bottom: 3px; min-width: 60px; text-align: right; }
+.big small { font-size: 14px; color: var(--mute); margin-bottom: 3px; min-width: 60px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .big strong { font-size: 26px; font-weight: 500; line-height: 1; min-width: 88px; text-align: right; }
 .big em { display: inline-block; min-width: 2.3em; text-align: left; font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
+.cal { width: 22px; height: 22px; flex-shrink: 0; align-self: center; display: inline-flex; align-items: center; justify-content: center; color: var(--mute); }
+a.cal:hover { color: var(--ink); }
 .stime { font-size: 15px; color: var(--ink); width: 80px; flex-shrink: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
 .anchor-label { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--mute); }
 .anchor-label input[type='time'] { width: auto; min-width: 112px; cursor: text; }
 .anchor-label input[type='time']::-webkit-calendar-picker-indicator { opacity: 0.6; cursor: pointer; }
 
 
+@media (max-width: 1100px) {
+  .main { padding-inline: clamp(24px, 5vw, 64px); }
+}
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
   .side { position: static; height: auto; border-bottom: 1px solid var(--line); }

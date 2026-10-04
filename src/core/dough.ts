@@ -187,7 +187,7 @@ export function compute(raw: Inputs) {
       kind: 'oven',
       start: 0,
       min: i.pizzas * (bakeMin + 2),
-      note: `${bakeMin.toFixed(1)} min per pizza at ${i.ovenC} °C, 2 min between`,
+      note: `baking, ${i.ovenC} °C, ${bakeMin.toFixed(1)} min per pizza`,
     },
   ]
   let t = 0
@@ -197,20 +197,20 @@ export function compute(raw: Inputs) {
     stages.unshift({ label, kind, start: t, min: mins, note })
   }
   const wt = waterTemp.toFixed(0)
-  before('Stesura e farcitura', 'prep', 20, 'shape and top')
-  before('Appretto', 'room', proofH * 60, `balls, ${i.roomC} °C`)
-  before('Maturazione', 'cold', coldH * 60, `balls in the fridge, ${i.fridgeC} °C`)
-  before('Staglio', 'prep', 15, 'divide and ball')
+  before('Stesura e farcitura', 'prep', 20, 'shaping and topping')
+  before('Appretto', 'room', proofH * 60, `final proof, ${i.roomC} °C`)
+  before('Maturazione', 'cold', coldH * 60, `cold rise, ${i.fridgeC} °C`)
+  before('Staglio', 'prep', 15, 'dividing into panetti')
   before('Puntata', 'room', bulkH * 60, `bulk rise, ${i.roomC} °C`)
-  before('Impasto', 'prep', 12, `add salt, yeast${extras.length ? `, ${extras.join(' and ')}` : ''}, aim for ${i.ddtC} °C`)
-  before('Autolisi', 'room', autolysisMin, `flour and water at ${wt} °C`)
+  before('Impasto', 'prep', 12, `mixing, add ${['salt', 'yeast', ...extras].join(', ').replace(/, ([^,]*)$/, ' and $1')}`)
+  before('Autolisi', 'room', autolysisMin, `autolysis, water at ${wt} °C`)
   if (i.surface !== 'tray')
     stages.push({
       label: 'Preriscaldamento',
       kind: 'oven',
       start: -60 * M,
       min: 60,
-      note: 'with the stone or steel',
+      note: 'preheat, stone or steel',
       overlap: true,
     })
   stages.sort((a, b) => a.start - b.start)

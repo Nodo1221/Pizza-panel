@@ -2,6 +2,7 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
+import { googleCalendarUrl } from './core/calendar'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
@@ -18,6 +19,8 @@ const diamFromBallG = (g: number, thick: ThickOption) =>
 type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct' | 'flourC' | 'ddtC' | 'mixing'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null; diamCm: number; thick: ThickOption }
 
 type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
+
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const durParts = (m: number): [string, string] => (m >= 90 ? [(m / 60).toFixed(1), 'h'] : [String(Math.round(m)), 'min'])
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
@@ -411,6 +414,7 @@ export default function App() {
               <span className="dots" />
               <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
               <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
+              <span className="cal" />
             </div>
           ))}
           {r.dilute && (
@@ -434,8 +438,18 @@ export default function App() {
                 <time className="stime">{fmtClock(clockMs, nowMs)}</time>
                 <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
                 <span className="dots" />
-                <small>{x.note}</small>
+                <small title={x.note}>{x.note}</small>
                 <strong>{v} <em>{u}</em></strong>
+                {x.min >= 90 ? (
+                  <a
+                    className="cal" target="_blank" rel="noreferrer" title="Add to Google Calendar" aria-label={`Add ${x.label} to Google Calendar`}
+                    href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs: clockMs, endMs: clockMs + x.min * 60000, details: x.note, tz: TZ })}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                      <rect x="2" y="3" width="12" height="11" rx="1.5" /><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" />
+                    </svg>
+                  </a>
+                ) : <span className="cal" />}
               </div>
             )
           })}
