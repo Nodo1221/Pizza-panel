@@ -93,6 +93,18 @@ const More = ({ title, sub, className, children }: { title: string; sub?: ReactN
 
 export default function App() {
   const [s, setS] = useState<S>(load)
+
+  useEffect(() => {
+    const click = (e: MouseEvent) => {
+      document.querySelectorAll('details.tip[open]').forEach(el => {
+        if (!el.contains(e.target as Node)) {
+          el.removeAttribute('open')
+        }
+      })
+    }
+    document.addEventListener('click', click)
+    return () => document.removeEventListener('click', click)
+  }, [])
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify(s))
