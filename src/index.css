@@ -171,8 +171,15 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .big strong { font-size: 26px; font-weight: 500; line-height: 1; min-width: 88px; text-align: right; }
 .big em { display: inline-block; min-width: 2.3em; text-align: left; font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
-.cal { width: 22px; height: 22px; flex-shrink: 0; align-self: center; display: inline-flex; align-items: center; justify-content: center; color: var(--mute); }
-a.cal:hover { color: var(--ink); }
+.hd.mid { align-items: center; }
+.cal-menu summary { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 3px; background: var(--field); color: var(--mute); }
+.cal-menu summary:hover { color: var(--ink); }
+.cal-menu[open] summary { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
+.cal-menu .pop { left: auto; right: 0; top: 44px; width: 320px; display: grid; gap: 2px; padding: 12px; }
+.cal-menu .pop > .hint { margin: 0 0 6px; }
+.cal-menu .pop a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 8px; border-radius: 3px; color: var(--ink); text-decoration: none; }
+.cal-menu .pop a:hover { background: var(--table); }
+.cal-menu .pop a small { font-size: 13px; color: var(--mute); white-space: nowrap; }
 .stime { font-size: 15px; color: var(--ink); width: 80px; flex-shrink: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
 .anchor-label { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--mute); }
 .anchor-label input[type='time'] { width: auto; min-width: 112px; cursor: text; }

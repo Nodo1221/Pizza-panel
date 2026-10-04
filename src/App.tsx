@@ -414,7 +414,6 @@ export default function App() {
               <span className="dots" />
               <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
               <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
-              <span className="cal" />
             </div>
           ))}
           {r.dilute && (
@@ -423,12 +422,33 @@ export default function App() {
         </section>
 
         <section>
-          <div className="hd">
+          <div className="hd mid">
             <h2>Schedule</h2>
             <label className="anchor-label">
               from
               <input type="time" aria-label="Starting time" value={anchorTime} onChange={e => setAnchorTime(e.target.value)} />
             </label>
+            <details className="tip cal-menu">
+              <summary aria-label="Add stages to Google Calendar" title="Add to Google Calendar">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                  <rect x="2" y="3" width="12" height="11" rx="1.5" /><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" />
+                </svg>
+              </summary>
+              <div className="pop">
+                <p className="hint">Add to Google Calendar</p>
+                {r.stages.filter(x => x.min >= 90).map(x => {
+                  const startMs = nowMs + (x.start - stageAnchor)
+                  return (
+                    <a
+                      key={x.label} target="_blank" rel="noreferrer"
+                      href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs, endMs: startMs + x.min * 60000, details: x.note, tz: TZ })}
+                    >
+                      <span>{x.label}</span><small>{dur(x.min)}, from {fmtClock(startMs, nowMs)}</small>
+                    </a>
+                  )
+                })}
+              </div>
+            </details>
           </div>
           {r.stages.map(x => {
             const [v, u] = durParts(x.min)
@@ -440,16 +460,6 @@ export default function App() {
                 <span className="dots" />
                 <small title={x.note}>{x.note}</small>
                 <strong>{v} <em>{u}</em></strong>
-                {x.min >= 90 ? (
-                  <a
-                    className="cal" target="_blank" rel="noreferrer" title="Add to Google Calendar" aria-label={`Add ${x.label} to Google Calendar`}
-                    href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs: clockMs, endMs: clockMs + x.min * 60000, details: x.note, tz: TZ })}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-                      <rect x="2" y="3" width="12" height="11" rx="1.5" /><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" />
-                    </svg>
-                  </a>
-                ) : <span className="cal" />}
               </div>
             )
           })}
