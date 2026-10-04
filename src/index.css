@@ -128,7 +128,7 @@ input[aria-invalid='true'] { border-color: var(--alert); }
 .big b { font-size: 17px; white-space: nowrap; }
 .big small { font-size: 14px; color: var(--mute); margin-bottom: 3px; min-width: 60px; text-align: right; }
 .big strong { font-size: 26px; font-weight: 500; line-height: 1; min-width: 88px; text-align: right; }
-.big em { font-size: 14px; font-style: normal; color: var(--mute); }
+.big em { display: inline-block; min-width: 2.3em; text-align: left; font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 
 
