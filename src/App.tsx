@@ -2,7 +2,7 @@ import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
-import { LIMITS, STYLES, compute, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
+import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Mixing, type Style, type Surface, type YeastType } from './core/dough'
 
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
 type S = Omit<Inputs, 'w' | 'wEst'> & { flourId: string; protein: number; w: number }
@@ -15,6 +15,7 @@ const init: S = {
   roomC: 21, fridgeC: 4, flourC: 21, ddtC: 24, mixing: 'hand',
   style: 'overnight',
   ovenC: 275, surface: 'tray',
+  oilPct: 0, sugarPct: 0,
 }
 
 const KEY = 'pizza-calc:v5'
@@ -121,6 +122,8 @@ export default function App() {
   const r = useMemo(() => compute({ ...s, w: effW, wEst: !(s.w > 0) }), [s, effW])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
+  const brown = enrichment(s.ovenC)
+  const browning = [s.sugarPct > 0 && `${s.sugarPct}% sugar`, s.oilPct > 0 && `${s.oilPct}% oil`].filter(Boolean).join(', ') || 'off'
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
 
@@ -218,13 +221,22 @@ export default function App() {
 
           <div className="g">
             <F label="Oven (°C)">{num('ovenC')}</F>
-            <p className="hint">Adds sugar and olive oil for browning below 400 °C.</p>
             <Grp label="Baking surface">
               <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray or rack'], ['stone', 'Stone'], ['steel', 'Steel']]} />
             </Grp>
           </div>
 
           <div className="stack">
+            <More title="Browning" sub={browning}>
+              <div className="row">
+                <F label="Sugar (%)">{num('sugarPct')}</F>
+                <F label="Olive oil (%)">{num('oilPct')}</F>
+              </div>
+              <p className="hint">Off by default, as in traditional Neapolitan dough. Sugar helps the crust brown in a cooler oven, usually 1–3%. Oil softens the crumb, usually 2–3%. Above about 350 °C the crust browns by itself.</p>
+              {(brown.sugar !== s.sugarPct || brown.oil !== s.oilPct) && (
+                <p className="hint">Suggested for {s.ovenC} °C: {brown.sugar}% sugar, {brown.oil}% oil. <button type="button" className="link" onClick={() => setS(p => ({ ...p, sugarPct: brown.sugar, oilPct: brown.oil }))}>Use it</button></p>
+              )}
+            </More>
             <More title="Water temperature" sub={`${r.waterTemp.toFixed(0)} °C`}>
               <div className="row">
                 <F label="Flour (°C)">{num('flourC')}</F>

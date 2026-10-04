@@ -20,6 +20,8 @@ export interface Inputs {
   style: Style
   ovenC: number
   surface: Surface
+  oilPct: number // olive oil, % of flour
+  sugarPct: number // sugar, % of flour
 }
 
 export interface Stage {
@@ -53,6 +55,8 @@ export const LIMITS = {
   flourC: { min: 0, max: 40, step: 1 },
   ddtC: { min: 15, max: 35, step: 1 },
   ovenC: { min: 150, max: 500, step: 5 },
+  oilPct: { min: 0, max: 5, step: 0.5 },
+  sugarPct: { min: 0, max: 3, step: 0.5 },
 } as const
 export type LimitKey = keyof typeof LIMITS
 
@@ -76,9 +80,10 @@ export function sanitize<T extends object>(i: T): T {
   return o as T
 }
 
-// Sugar and olive oil help colour and the rim in a home oven. They taper off as the oven gets hotter:
-// full amounts (2% oil, 1% sugar) up to 300 C, half at 350 C, none from 400 C. AVPN allows neither,
-// but it also expects an oven above 430 C.
+// Suggested sugar and oil for browning, never applied on its own (the defaults are 0, as in AVPN).
+// Sugar at 1-3% and oil at 2-3% are the usual ranges for home-oven pizza. The taper with oven
+// temperature is a rule of thumb, not a measured curve: full suggestion up to 300 C, half at 350 C,
+// none from 400 C, where the crust browns by itself.
 export function enrichment(ovenC: number) {
   const f = clamp((400 - ovenC) / 100, 0, 1)
   return { oil: Math.round(2 * f * 2) / 2, sugar: Math.round(1 * f * 2) / 2 }
@@ -163,7 +168,7 @@ export function compute(raw: Inputs) {
   const saltPct = i.hydration * (0.05 + 0.005 * clamp((w - 280) / 30, 0, 1))
   const freshPct = freshYeastPct([[bulkH, i.roomC], [coldH, i.fridgeC], [proofH, i.roomC]])
   const yPct = freshPct * YEAST_X[i.yeast]
-  const { oil: oilPct, sugar: sugarPct } = enrichment(i.ovenC)
+  const { oilPct, sugarPct } = i
 
   const dough = i.pizzas * i.ballG
   const flour = dough / (1 + (i.hydration + saltPct + oilPct + sugarPct + yPct) / 100)
