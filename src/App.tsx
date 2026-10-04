@@ -140,8 +140,6 @@ export default function App() {
   }, [s])
   const [side, setSide] = useState(loadSide)
   const [anchorTime, setAnchorTime] = useState(() => toHHMM(Date.now()))
-  const [calOff, setCalOff] = useState<string[]>([])
-  const [popBlocked, setPopBlocked] = useState(false)
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -186,13 +184,6 @@ export default function App() {
   const nowMs = (() => { const [h, m] = anchorTime.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime() })()
   const stageAnchor = r.stages[0].start
   const calStages = r.stages.filter(x => x.min >= 90).map(x => ({ ...x, startMs: nowMs + (x.start - stageAnchor) }))
-  const calPicked = calStages.filter(x => !calOff.includes(x.label))
-  const addToCalendar = () => {
-    const events = calPicked.map(x => ({ title: `${x.label} (pizza dough)`, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note }))
-    // Google's link creates one event, so each ticked stage opens in its own tab.
-    const opened = events.map(e => window.open(googleCalendarUrl({ ...e, tz: TZ }), '_blank'))
-    setPopBlocked(opened.some(w => w === null))
-  }
 
   const bad = (k: NumKey, v: number) => !(v >= LIMITS[k].min && v <= LIMITS[k].max)
   const num = (k: NumKey) => (
@@ -446,18 +437,13 @@ export default function App() {
               </summary>
               <div className="pop">
                 {calStages.map(x => (
-                  <label className="pick" key={x.label}>
-                    <input
-                      type="checkbox" checked={!calOff.includes(x.label)}
-                      onChange={e => setCalOff(o => (e.target.checked ? o.filter(l => l !== x.label) : [...o, x.label]))}
-                    />
+                  <a
+                    key={x.label} target="_blank" rel="noreferrer"
+                    href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note, tz: TZ })}
+                  >
                     <span>{x.label}</span><small>{dur(x.min)}, from {fmtClock(x.startMs, nowMs)}</small>
-                  </label>
+                  </a>
                 ))}
-                <button type="button" className="go" disabled={calPicked.length === 0} onClick={addToCalendar}>
-                  Add to Google Calendar
-                </button>
-                {popBlocked && <p className="hint">Your browser blocked some tabs. Allow pop-ups for this site and try again.</p>}
               </div>
             </details>
           </div>
