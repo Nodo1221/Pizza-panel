@@ -197,6 +197,16 @@ export default function App() {
   }, [s, effW, effBallG, def.oilPct, def.sugarPct])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
+  const params: [string, string][] = [
+    ['Pizzas', `${r.used.pizzas} × ${r.used.ballG} g`],
+    ['Schedule', STYLES[s.style]],
+    ['Flour', `${flour?.name ?? 'Other flour'}, W ${Math.round(effW)}`],
+    ['Hydration', `${r.used.hydration}%`],
+    ['Yeast', { fresh: 'Fresh', instant: 'Instant', active: 'Active dry' }[s.yeast]],
+    ['Room / fridge', `${s.roomC} / ${s.fridgeC} °C`],
+    ['Oven', `${s.ovenC} °C, ${{ tray: 'tray', stone: 'stone', steel: 'steel' }[s.surface]}`],
+    ...(s.browning ? [['Extra browning', 'on'] as [string, string]] : []),
+  ]
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
   // The chosen time is today, or tomorrow when it has already passed.
@@ -400,6 +410,13 @@ export default function App() {
       />
 
       <main className="main">
+        <section className="print-only">
+          <h1>Neapolitan pizza dough</h1>
+          <dl className="params">
+            {params.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+          </dl>
+        </section>
+
         <section>
           <div className="hd">
             <h2>Timeline</h2>
@@ -465,13 +482,18 @@ export default function App() {
                 ))}
               </div>
             </details>
+            <button type="button" className="icon-btn" aria-label="Export as PDF" title="Export as PDF" onClick={() => window.print()}>
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                <path d="M4.5 6V2h7v4M4.5 11.5h-2v-5h11v5h-2M4.5 9.5h7v4h-7z" />
+              </svg>
+            </button>
           </div>
           {r.stages.map(x => {
             const [v, u] = durParts(x.min)
             const clockMs = nowMs + (x.start - stageAnchor)
             return (
               <div className="line big" key={x.label}>
-                <time className="stime">{fmtClock(clockMs, nowMs)}</time>
+                <time className="stime no-print">{fmtClock(clockMs, nowMs)}</time>
                 <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
                 <span className="dots" />
                 <small title={x.note}>{x.note}</small>

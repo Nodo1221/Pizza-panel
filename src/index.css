@@ -170,7 +170,9 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .big em { font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 .hd.mid { align-items: center; }
-.cal-menu summary { width: 36px; height: 36px; border: 0; border-radius: 3px; background: none; color: var(--mute); }
+.cal-menu summary, .icon-btn { width: 36px; height: 36px; border: 0; border-radius: 3px; background: none; color: var(--mute); }
+.icon-btn { display: grid; place-items: center; padding: 0; cursor: pointer; }
+.icon-btn:hover { color: var(--ink); }
 .cal-menu summary:hover, .cal-menu[open] summary { background: none; color: var(--ink); }
 .cal-menu .pop { left: auto; right: 0; top: 40px; width: 340px; display: grid; gap: 2px; padding: 8px; border: 1px solid var(--dot); background: var(--sheet); }
 .cal-menu .pop a { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 8px; border-radius: 3px; color: var(--ink); text-decoration: none; }
@@ -196,4 +198,25 @@ section > .hint { margin-top: 12px; }
   .app { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; height: auto; border-bottom: 1px solid var(--line); }
   .grip { display: none; }
+}
+
+.print-only { display: none; }
+.params { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 32px; margin: 12px 0 0; font-size: 15px; }
+.params div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dotted var(--dot); }
+.params dt { color: var(--mute); }
+.params dd { margin: 0; }
+
+@media print {
+  @page { margin: 16mm; }
+  body { background: #fff; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .side, .grip, .no-print, .anchor-label, .cal-menu, .icon-btn { display: none !important; }
+  .app { display: block; }
+  .main { padding: 0; gap: 16px; }
+  .main > section + section { padding-top: 16px; }
+  .big { padding: 3px 0; }
+  h1 { font-size: 30px; }
+  .print-only { display: block; }
+  .big small { display: block; }
+  section { break-inside: avoid; }
 }
