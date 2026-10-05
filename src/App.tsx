@@ -24,6 +24,13 @@ const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const durParts = (m: number): [string, string] => (m >= 90 ? [(m / 60).toFixed(1), 'h'] : [String(Math.round(m)), 'min'])
 const dur = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${Math.round(m)} min`)
+// The next :00 or :30 after the given time, so 00:07 gives 00:30 and 00:31 gives 01:00.
+const nextHalfHour = (ms: number) => {
+  const d = new Date(ms)
+  d.setSeconds(0, 0)
+  d.setMinutes(d.getMinutes() < 30 ? 30 : 60)
+  return d.getTime()
+}
 const toHHMM = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
 const fmtClock = (absMs: number, originMs: number): string => {
   const hm = toHHMM(absMs)
@@ -139,7 +146,7 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
-  const [anchorTime, setAnchorTime] = useState(() => toHHMM(Date.now()))
+  const [anchorTime, setAnchorTime] = useState(() => toHHMM(nextHalfHour(Date.now())))
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -181,7 +188,16 @@ export default function App() {
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
-  const nowMs = (() => { const [h, m] = anchorTime.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime() })()
+  // The chosen time is today, or tomorrow when it has already passed.
+  const nowMs = (() => {
+    const [h, m] = anchorTime.split(':').map(Number)
+    const d = new Date()
+    if (Number.isNaN(h + m)) return d.getTime()
+    const now = d.getTime()
+    d.setHours(h, m, 0, 0)
+    if (d.getTime() < now) d.setDate(d.getDate() + 1)
+    return d.getTime()
+  })()
   const stageAnchor = r.stages[0].start
   const calStages = r.stages.filter(x => x.min >= 90).map(x => ({ ...x, startMs: nowMs + (x.start - stageAnchor) }))
 
@@ -439,7 +455,7 @@ export default function App() {
                 {calStages.map(x => (
                   <a
                     key={x.label} target="_blank" rel="noreferrer"
-                    href={googleCalendarUrl({ title: `${x.label} (pizza dough)`, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note, tz: TZ })}
+                    href={googleCalendarUrl({ title: x.label, startMs: x.startMs, endMs: x.startMs + x.min * 60000, details: x.note, tz: TZ })}
                   >
                     <span>{x.label}</span><small>{dur(x.min)}, from {fmtClock(x.startMs, nowMs)}</small>
                   </a>
