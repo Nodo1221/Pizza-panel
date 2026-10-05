@@ -168,7 +168,7 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .big { padding: 8px 0; }
 .big b { font-size: 17px; white-space: nowrap; }
 .big small { font-size: 14px; color: var(--mute); margin-bottom: 3px; min-width: 60px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.big strong { font-size: 26px; font-weight: 500; line-height: 1; min-width: 104px; text-align: left; }
+.big strong { display: inline-flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 26px; font-weight: 500; line-height: 1; min-width: 84px; }
 .big em { font-size: 14px; font-style: normal; color: var(--mute); }
 section > .hint { margin-top: 12px; }
 .hd.mid { align-items: center; }
