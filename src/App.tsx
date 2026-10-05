@@ -8,7 +8,6 @@ import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestH
 // w is 0 when the pack's W has not been entered; the app then estimates it from protein.
 // diamCm is 0 when the user has not entered a diameter; ballG is then used directly.
 type ThickOption = 'light' | 'classic' | 'thick'
-const THICK_LABELS: [ThickOption, string][] = [['light', 'Thin'], ['classic', 'Classic'], ['thick', 'Thick']]
 // Thickness factor: grams of dough per cm² of pizza area (based on Lehmann/community conventions).
 const THICK_TF: Record<ThickOption, number> = { light: 0.35, classic: 0.47, thick: 0.65 }
 const ballGFromDiam = (diam: number, thick: ThickOption) =>
@@ -18,7 +17,7 @@ const diamFromBallG = (g: number, thick: ThickOption) =>
 
 type S = Omit<Inputs, 'w' | 'wEst' | 'oilPct' | 'sugarPct' | 'flourC' | 'ddtC' | 'mixing'> & { flourId: string; protein: number; w: number; browning: boolean; oilPct: number | null; sugarPct: number | null; diamCm: number; thick: ThickOption }
 
-type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct'>
+type NumKey = Exclude<LimitKey, 'oilPct' | 'sugarPct' | 'flourC' | 'ddtC'>
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -29,6 +28,17 @@ const nextHalfHour = (ms: number) => {
   const d = new Date(ms)
   d.setSeconds(0, 0)
   d.setMinutes(d.getMinutes() < 30 ? 30 : 60)
+  return d.getTime()
+}
+// Not user-adjustable: the calculator assumes hand mixing, 20 °C flour and a 24 °C dough.
+const FIXED = { flourC: 20, ddtC: 24, mixing: 'hand' } as const
+// The chosen clock time is today, or tomorrow when it has already passed `now`.
+const anchorMs = (hhmm: string, now: number) => {
+  const [h, m] = hhmm.split(':').map(Number)
+  const d = new Date(now)
+  if (Number.isNaN(h + m)) return now
+  d.setHours(h, m, 0, 0)
+  if (d.getTime() < now) d.setDate(d.getDate() + 1)
   return d.getTime()
 }
 const toHHMM = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
@@ -146,7 +156,8 @@ export default function App() {
     }
   }, [s])
   const [side, setSide] = useState(loadSide)
-  const [anchorTime, setAnchorTime] = useState(() => toHHMM(nextHalfHour(Date.now())))
+  const [clock, setClock] = useState(() => Date.now())
+  const [anchorTime, setAnchorTime] = useState(() => toHHMM(nextHalfHour(clock)))
   // Only a width the user chose is saved, so the default keeps following the window size.
   const pick = (n: number) => {
     setSide(n)
@@ -182,22 +193,14 @@ export default function App() {
   const def = enrichment(s.ovenC)
   const r = useMemo(() => {
     const add = s.browning ? { oilPct: s.oilPct ?? def.oilPct, sugarPct: s.sugarPct ?? def.sugarPct } : { oilPct: 0, sugarPct: 0 }
-    return compute({ ...s, ballG: effBallG, flourC: 20, ddtC: 24, mixing: 'hand', ...add, w: effW, wEst: !(s.w > 0) })
+    return compute({ ...s, ballG: effBallG, ...FIXED, ...add, w: effW, wEst: !(s.w > 0) })
   }, [s, effW, effBallG, def.oilPct, def.sugarPct])
   const flour = FLOURS.find(f => f.id === s.flourId)
   const sug = suggestHydration(effW, s.surface, s.ovenC)
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
   // The chosen time is today, or tomorrow when it has already passed.
-  const nowMs = (() => {
-    const [h, m] = anchorTime.split(':').map(Number)
-    const d = new Date()
-    if (Number.isNaN(h + m)) return d.getTime()
-    const now = d.getTime()
-    d.setHours(h, m, 0, 0)
-    if (d.getTime() < now) d.setDate(d.getDate() + 1)
-    return d.getTime()
-  })()
+  const nowMs = anchorMs(anchorTime, clock)
   const stageAnchor = r.stages[0].start
   const calStages = r.stages.filter(x => x.min >= 90).map(x => ({ ...x, startMs: nowMs + (x.start - stageAnchor) }))
 
@@ -443,7 +446,7 @@ export default function App() {
             <h2>Schedule</h2>
             <label className="anchor-label">
               from
-              <input type="time" aria-label="Starting time" value={anchorTime} onChange={e => setAnchorTime(e.target.value)} />
+              <input type="time" aria-label="Starting time" value={anchorTime} onChange={e => { setClock(Date.now()); setAnchorTime(e.target.value) }} />
             </label>
             <details className="tip cal-menu">
               <summary aria-label="Add stages to calendar" title="Add to calendar">
