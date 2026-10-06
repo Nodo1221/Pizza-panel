@@ -434,7 +434,7 @@ export default function App() {
             <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
           </div>
           {r.alerts.length > 0 && (
-            <div className="g" style={{ marginTop: '20px' }}>
+            <div className="g no-print" style={{ marginTop: '20px' }}>
               {r.alerts.map(a => <p className="alert" key={a}>{a}</p>)}
             </div>
           )}
