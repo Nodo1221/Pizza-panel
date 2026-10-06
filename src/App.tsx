@@ -306,7 +306,7 @@ export default function App() {
           </div>
 
           <div className="g">
-            <Grp label={<>Flour{flour && <Tip>{flour.where}</Tip>}</>}>
+            <Grp label={<>Flour{flour?.note && <Tip>{flour.note}</Tip>}</>}>
               <select
                 aria-label="Flour"
                 value={s.flourId}
