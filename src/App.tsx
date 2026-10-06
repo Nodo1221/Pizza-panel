@@ -447,7 +447,7 @@ export default function App() {
           </dl>
         </section>
 
-        <section>
+        <section className="timeline">
           <div className="hd">
             <h2>Timeline</h2>
             <span>{dur(-first.start / 60000)} to first pizza</span>

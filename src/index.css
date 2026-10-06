@@ -66,6 +66,11 @@ b, strong { font-weight: inherit; }
 
 .main { min-width: 0; padding: 48px clamp(64px, 12vw, 240px) 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-content: start; }
 .main > section + section { border-top: 1px solid var(--line); padding-top: 32px; }
+.main > .timeline {
+  border-top: none;
+  padding-top: 10px;
+}
+
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .oven-row { grid-template-columns: 2fr 3fr; }
@@ -223,6 +228,9 @@ section > .hint { margin-top: 12px; }
   .app { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; height: auto; border-bottom: 1px solid var(--line); }
   .grip { display: none; }
+  .main > .timeline {
+    padding-top: 0px;
+  }
 }
 
 .print-only { display: none; }
