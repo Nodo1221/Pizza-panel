@@ -30,6 +30,10 @@ const nextHalfHour = (ms: number) => {
   d.setMinutes(d.getMinutes() < 30 ? 30 : 60)
   return d.getTime()
 }
+const LEGEND: [string, string][] = [['room', 'Room temperature'], ['cold', 'Fridge'], ['oven', 'Oven'], ['prep', 'Hands on']]
+const dilutionHint = (d: { solution: number; waterIn: number }) => `Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use ${d.solution.toFixed(0)} g of that mix and take ${d.waterIn.toFixed(0)} g off the water above.`
+const pctText = (pc: number) => `${pc.toFixed(pc < 10 ? 2 : 1)}%`
+
 // Not user-adjustable: the calculator assumes hand mixing, 20 °C flour and a 24 °C dough.
 const FIXED = { flourC: 20, ddtC: 24, mixing: 'hand' } as const
 // The chosen clock time is today, or tomorrow when it has already passed `now`.
@@ -245,6 +249,31 @@ export default function App() {
     { key: 'yeast', name: `Yeast (${yName})`, g: r.yeastG, pc: r.pct.yeast, d: 2 },
   ]
 
+  // Open the window inside the click, before the async work, so popup blockers allow it.
+  const openPdf = async () => {
+    const win = window.open('', '_blank')
+    try {
+      const { buildPdf } = await import('./pdf')
+      const blob = await buildPdf({
+        title: 'Neapolitan pizza dough',
+        params,
+        hours: `${dur(-first.start / 60000)} to first pizza`,
+        band: r.stages.filter(x => !x.overlap).map(x => ({ kind: x.kind, min: x.min })),
+        key: LEGEND,
+        recipeSub: `${r.used.pizzas} × ${r.used.ballG} g`,
+        recipe: rows.map(x => ({ key: x.key, name: x.name, mid: pctText(x.pc), v: x.g.toFixed(x.d), u: 'g' })),
+        hint: r.dilute ? dilutionHint(r.dilute) : undefined,
+        schedule: r.stages.map(x => { const [v, u] = durParts(x.min); return { kind: x.kind, name: x.label, mid: x.note, v: String(v), u } }),
+      })
+      const url = URL.createObjectURL(blob)
+      if (win) win.location.href = url
+      else window.open(url, '_blank')
+    } catch (e) {
+      win?.close()
+      throw e
+    }
+  }
+
   return (
     <div className="app" style={{ '--side': `${side}px` } as CSSProperties}>
       <aside className="side">
@@ -428,10 +457,7 @@ export default function App() {
             ))}
           </div>
           <div className="key">
-            <span><i className="sw" style={{ background: 'var(--room)' }} />Room temperature</span>
-            <span><i className="sw" style={{ background: 'var(--cold)' }} />Fridge</span>
-            <span><i className="sw" style={{ background: 'var(--oven)' }} />Oven</span>
-            <span><i className="sw" style={{ background: 'var(--prep)' }} />Hands on</span>
+            {LEGEND.map(([kind, label]) => <span key={kind}><i className="sw" style={{ background: `var(--${kind})` }} />{label}</span>)}
           </div>
           {r.alerts.length > 0 && (
             <div className="g no-print" style={{ marginTop: '20px' }}>
@@ -449,12 +475,12 @@ export default function App() {
             <div className="line big" key={x.key}>
               <b><i className="sw" style={{ background: `var(--p-${x.key})` }} />{x.name}</b>
               <span className="dots" />
-              <small>{x.pc.toFixed(x.pc < 10 ? 2 : 1)}%</small>
+              <small>{pctText(x.pc)}</small>
               <strong>{x.g.toFixed(x.d)} <em>g</em></strong>
             </div>
           ))}
           {r.dilute && (
-            <p className="hint">Under 1 g of yeast is hard to weigh: stir 1 g of yeast into 99 g of water, use {r.dilute.solution.toFixed(0)} g of that mix and take {r.dilute.waterIn.toFixed(0)} g off the water above.</p>
+            <p className="hint">{dilutionHint(r.dilute)}</p>
           )}
         </section>
 
@@ -482,9 +508,9 @@ export default function App() {
                 ))}
               </div>
             </details>
-            <button type="button" className="icon-btn" aria-label="Export as PDF" title="Export as PDF" onClick={() => window.print()}>
+            <button type="button" className="icon-btn" aria-label="Open as PDF" title="Open as PDF" onClick={openPdf}>
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-                <path d="M4.5 6V2h7v4M4.5 11.5h-2v-5h11v5h-2M4.5 9.5h7v4h-7z" />
+                <path d="M3.5 1.5h6l3 3v10h-9zM9.5 1.5v3h3M5.5 8h5M5.5 10.5h5" />
               </svg>
             </button>
           </div>

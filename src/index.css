@@ -138,10 +138,14 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .side > .link, .g > .link { justify-self: start; font-size: 14px; }
 
 .tip { position: relative; }
+.f, .row { position: relative; }
+.row > .f, .f .tip { position: static; }
 .tip summary { list-style: none; cursor: pointer; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--dot); border-radius: 50%; font-size: 12px; color: var(--mute); }
 .tip summary::-webkit-details-marker { display: none; }
 .tip[open] summary { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
 .tip .pop { position: absolute; z-index: 5; left: -50px; top: 26px; width: 300px; max-width: calc(100vw - 40px); padding: 12px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: 3px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+
+.f .tip .pop { left: 0; right: 0; width: auto; max-width: none; }
 
 .more { border-top: 1px solid var(--line); }
 .more summary { display: flex; align-items: center; gap: 12px; padding: 8px 0; cursor: pointer; list-style: none; font: 500 16px var(--serif); }
