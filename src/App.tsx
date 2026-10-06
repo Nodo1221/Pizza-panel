@@ -527,7 +527,7 @@ export default function App() {
                   <small title={x.note}>{x.note}</small>
                   <strong>{v} <em>{u}</em></strong>
                 </div>
-                {x.kind === 'oven' && <p className="bake-note">{r.bakeMin.toFixed(1)} min per pizza at {s.ovenC} °C</p>}
+                {x.kind === 'oven' && !x.overlap && <p className="bake-note">{r.bakeMin.toFixed(1)} min per pizza at {s.ovenC} °C</p>}
               </Fragment>
             )
           })}
