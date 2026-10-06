@@ -190,9 +190,23 @@ section > .hint { margin-top: 12px; }
 }
 @media (max-width: 600px) {
   .main { padding-inline: 20px; }
+  .hd.mid { flex-wrap: nowrap; gap: 8px; }
+  .anchor-label { gap: 8px; min-width: 0; }
+  .anchor-label input[type='time'] { min-width: 0; width: 118px; padding: 0 8px; flex-shrink: 1; }
+  .hd.mid h2 { flex-shrink: 0; }
+  .cal-menu summary, .icon-btn { width: 32px; height: 32px; flex-shrink: 0; }
+  .line { gap: 8px; }
   .big small { display: none; }
-  .big b { white-space: normal; }
-  .stime { width: 64px; }
+  .big b { font-size: 16px; }
+  .dots { min-width: 0; }
+  .big strong { min-width: 56px; font-size: 24px; }
+  .stime { width: 68px; font-size: 14px; }
+}
+@media (max-width: 340px) {
+  .big b { font-size: 15px; }
+  .stime { width: 60px; font-size: 13px; }
+  .big strong { min-width: 48px; font-size: 22px; }
+  .anchor-label input[type='time'] { width: 92px; }
 }
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
