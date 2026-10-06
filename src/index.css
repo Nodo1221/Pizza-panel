@@ -141,7 +141,7 @@ input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(
 .tip summary { list-style: none; cursor: pointer; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--dot); border-radius: 50%; font-size: 12px; color: var(--mute); }
 .tip summary::-webkit-details-marker { display: none; }
 .tip[open] summary { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
-.tip .pop { position: absolute; z-index: 5; left: -50px; top: 26px; width: 260px; padding: 12px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: 3px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.tip .pop { position: absolute; z-index: 5; left: -50px; top: 26px; width: 300px; max-width: calc(100vw - 40px); padding: 12px 14px; background: var(--sheet); border: 1px solid var(--line); border-radius: 3px; font-size: 14px; line-height: 1.45; color: var(--ink); }
 
 .more { border-top: 1px solid var(--line); }
 .more summary { display: flex; align-items: center; gap: 12px; padding: 8px 0; cursor: pointer; list-style: none; font: 500 16px var(--serif); }
@@ -189,6 +189,9 @@ section > .hint { margin-top: 12px; }
   .main { padding-inline: clamp(24px, 5vw, 64px); }
 }
 @media (max-width: 600px) {
+  .hd.mid { position: relative; }
+  .cal-menu { position: static; }
+  .cal-menu .pop { left: 0; right: 0; top: calc(100% + 4px); width: auto; max-width: none; }
   .main { padding-inline: 20px; }
   .hd.mid { flex-wrap: nowrap; gap: 8px; }
   .anchor-label { gap: 8px; min-width: 0; }
@@ -224,7 +227,7 @@ section > .hint { margin-top: 12px; }
   @page { margin: 16mm; }
   body { background: #fff; }
   * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .side, .grip, .no-print, .anchor-label, .cal-menu, .icon-btn { display: none !important; }
+  .side, .grip, .no-print, .alert, .anchor-label, .cal-menu, .icon-btn { display: none !important; }
   .app { display: block; }
   .main { padding: 0; gap: 16px; }
   .main > section + section { padding-top: 16px; }
