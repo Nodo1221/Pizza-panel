@@ -1,6 +1,6 @@
 import '@fontsource-variable/source-serif-4/wght.css'
 import '@fontsource/young-serif'
-import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react'
 import { FLOURS } from './core/flours'
 import { googleCalendarUrl } from './core/calendar'
 import { LIMITS, STYLES, compute, enrichment, estimateW, fit, sanitize, suggestHydration, type Inputs, type LimitKey, type Style, type Surface, type YeastType } from './core/dough'
@@ -211,6 +211,7 @@ export default function App() {
     ['Oven', `${s.ovenC} °C, ${{ tray: 'tray', stone: 'stone', steel: 'steel' }[s.surface]}`],
     ...(s.browning ? [['Extra browning', 'on'] as [string, string]] : []),
   ]
+  const legend = LEGEND.filter(([kind]) => r.stages.some(x => x.kind === kind && !x.overlap))
   const planned = Math.round(r.plan.total * 10) / 10
   const first = r.stages[0]
   // The chosen time is today, or tomorrow when it has already passed.
@@ -259,7 +260,7 @@ export default function App() {
         params,
         hours: `${dur(-first.start / 60000)} to first pizza`,
         band: r.stages.filter(x => !x.overlap).map(x => ({ kind: x.kind, min: x.min })),
-        key: LEGEND,
+        key: legend,
         recipeSub: `${r.used.pizzas} × ${r.used.ballG} g`,
         recipe: rows.map(x => ({ key: x.key, name: x.name, mid: pctText(x.pc), v: x.g.toFixed(x.d), u: 'g' })),
         hint: r.dilute ? dilutionHint(r.dilute) : undefined,
@@ -412,7 +413,7 @@ export default function App() {
           </div>
 
           <div className="g">
-            <div className="row">
+            <div className="row oven-row">
               <F label="Oven (°C)">{num('ovenC')}</F>
               <Grp label="Surface">
                 <Seg<Surface> value={s.surface} onPick={v => set('surface', v)} options={[['tray', 'Tray'], ['stone', 'Stone'], ['steel', 'Steel']]} />
@@ -457,7 +458,7 @@ export default function App() {
             ))}
           </div>
           <div className="key">
-            {LEGEND.map(([kind, label]) => <span key={kind}><i className="sw" style={{ background: `var(--${kind})` }} />{label}</span>)}
+            {legend.map(([kind, label]) => <span key={kind}><i className="sw" style={{ background: `var(--${kind})` }} />{label}</span>)}
           </div>
           {r.alerts.length > 0 && (
             <div className="g no-print" style={{ marginTop: '20px' }}>
@@ -518,13 +519,16 @@ export default function App() {
             const [v, u] = durParts(x.min)
             const clockMs = nowMs + (x.start - stageAnchor)
             return (
-              <div className="line big" key={x.label}>
-                <time className="stime no-print">{fmtClock(clockMs, nowMs)}</time>
-                <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
-                <span className="dots" />
-                <small title={x.note}>{x.note}</small>
-                <strong>{v} <em>{u}</em></strong>
-              </div>
+              <Fragment key={x.label}>
+                <div className="line big">
+                  <time className="stime no-print">{fmtClock(clockMs, nowMs)}</time>
+                  <b><i className="sw" style={{ background: `var(--${x.kind})` }} />{x.label}</b>
+                  <span className="dots" />
+                  <small title={x.note}>{x.note}</small>
+                  <strong>{v} <em>{u}</em></strong>
+                </div>
+                {x.kind === 'oven' && <p className="bake-note">{r.bakeMin.toFixed(1)} min per pizza at {s.ovenC} °C</p>}
+              </Fragment>
             )
           })}
         </section>
