@@ -204,7 +204,7 @@ export default function App() {
   const params: [string, string][] = [
     ['Pizzas', `${r.used.pizzas} × ${r.used.ballG} g`],
     ['Schedule', STYLES[s.style]],
-    ['Flour', `${flour?.name ?? 'Other flour'}, W ${Math.round(effW)}`],
+    // Flour row deleted from here
     ['Hydration', `${r.used.hydration}%`],
     ['Yeast', { fresh: 'Fresh', instant: 'Instant', active: 'Active dry' }[s.yeast]],
     ['Room / fridge', `${s.roomC} / ${s.fridgeC} °C`],
@@ -256,7 +256,7 @@ export default function App() {
     try {
       const { buildPdf } = await import('./pdf')
       const blob = await buildPdf({
-        title: 'Neapolitan pizza dough',
+        title: `${flour?.name ?? 'Other flour'} (W ${Math.round(effW)})`,
         params,
         hours: `${dur(-first.start / 60000)} to first pizza`,
         band: r.stages.filter(x => !x.overlap).map(x => ({ kind: x.kind, min: x.min })),
